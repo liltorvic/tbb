@@ -104,9 +104,9 @@ def main():
 
     # 5. Output the credentials
     print("\n✅ SUCCESS! Add these to your .env file:\n")
-    print(f"API_KEY={creds.api_key}")
-    print(f"API_SECRET={creds.api_secret}")
-    print(f"API_PASSPHRASE={creds.api_passphrase}")
+    print(f"POLYMARKET_API_KEY={creds.api_key}")
+    print(f"POLYMARKET_API_SECRET={creds.api_secret}")
+    print(f"POLYMARKET_API_PASSPHRASE={creds.api_passphrase}")
 
     print("\n[INFO] Your proxy wallet address (already in .env):")
     print(f"PROXY_WALLET={proxy}")

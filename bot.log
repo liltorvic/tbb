@@ -1,0 +1,439 @@
+2026-03-26 03:45:52  INFO      clob_client           PolymarketClient ready  mode=DRY-RUN
+2026-03-26 03:45:53  ERROR     position_merger       Cannot connect to Polygon RPC – merging disabled
+2026-03-26 03:45:53  INFO      __main__              =================================================================
+2026-03-26 03:45:53  INFO      __main__                Polymarket Market Making Bot  v2.0
+2026-03-26 03:45:53  INFO      __main__                Mode    : DRY-RUN (no real orders)
+2026-03-26 03:45:53  INFO      __main__                Markets : up to 5
+2026-03-26 03:45:53  INFO      __main__                Order $ : $10.0  max=$50.0
+2026-03-26 03:45:53  INFO      __main__                Spread  : 10–200 bps
+2026-03-26 03:45:53  INFO      __main__                Max pos : $200.0  daily stop=$25.0
+2026-03-26 03:45:53  INFO      __main__              =================================================================
+2026-03-26 03:45:53  WARNING   clob_client           get_balance attempt 1/3 error: ClobClient.get_balance_allowance() got an unexpected keyword argument 'asset_type'
+2026-03-26 03:45:54  WARNING   clob_client           get_balance attempt 2/3 error: ClobClient.get_balance_allowance() got an unexpected keyword argument 'asset_type'
+2026-03-26 03:45:56  WARNING   clob_client           get_balance attempt 3/3 error: ClobClient.get_balance_allowance() got an unexpected keyword argument 'asset_type'
+2026-03-26 03:46:00  WARNING   __main__              Balance check failed (Max retries exceeded for get_balance) – proceeding (normal during first-time setup)
+2026-03-26 03:46:00  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:46:01  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:46:03  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:46:07  ERROR     risk_manager          refresh_from_api: failed to fetch positions: Max retries exceeded for get_positions
+2026-03-26 03:46:07  INFO      market_selector       Scanning Polymarket for suitable markets…
+2026-03-26 03:46:11  INFO      market_selector       Fetched 600 raw markets from Gamma API
+2026-03-26 03:46:11  INFO      market_selector         ✓  Will Sweden win the televote for Eurovision 2026?        score=9.89  vol=$494,636 | spread=14.74% | rewards✓
+2026-03-26 03:46:11  INFO      market_selector         ✓  Kharg Island no longer under Iranian control by March 3  score=9.10  vol=$475,144 | spread=11.76% | rewards✓
+2026-03-26 03:46:11  INFO      market_selector         ✓  Will Bitcoin reach $80,000 in March?                     score=8.95  vol=$295,401 | spread=22.22% | rewards✓
+2026-03-26 03:46:11  INFO      market_selector         ✓  Will Tom Steyer win the California Governor Election in  score=8.90  vol=$610,625 | spread=9.52% | rewards✓
+2026-03-26 03:46:11  INFO      market_selector         ✓  US x Iran ceasefire by March 31?                         score=8.60  vol=$3,803,485 | spread=8.00% | rewards✓
+2026-03-26 03:46:11  INFO      market_selector       Selected 5 market(s) to trade.
+2026-03-26 03:46:11  INFO      order_manager         Registered market: Will Sweden win the televote for Eurovision 2026?
+2026-03-26 03:46:11  INFO      order_manager         Registered market: Kharg Island no longer under Iranian control by March 3
+2026-03-26 03:46:11  INFO      order_manager         Registered market: Will Bitcoin reach $80,000 in March?
+2026-03-26 03:46:11  INFO      order_manager         Registered market: Will Tom Steyer win the California Governor Election in
+2026-03-26 03:46:11  INFO      order_manager         Registered market: US x Iran ceasefire by March 31?
+2026-03-26 03:46:11  INFO      __main__              Startup complete – trading 5 market(s)
+2026-03-26 03:46:11  INFO      __main__              All tasks started – bot is running. Press Ctrl+C to stop.
+2026-03-26 03:46:11  INFO      orderbook_ws          WS connecting → wss://ws-subscriptions.clob.polymarket.com/ws/  (5 tokens)
+2026-03-26 03:46:11  ERROR     orderbook_ws          WS unexpected error: [Errno -5] No address associated with hostname  Reconnecting in 3s…
+2026-03-26 03:46:14  INFO      orderbook_ws          WS connecting → wss://ws-subscriptions.clob.polymarket.com/ws/  (5 tokens)
+2026-03-26 03:46:14  ERROR     orderbook_ws          WS unexpected error: [Errno -5] No address associated with hostname  Reconnecting in 6s…
+2026-03-26 03:46:20  INFO      orderbook_ws          WS connecting → wss://ws-subscriptions.clob.polymarket.com/ws/  (5 tokens)
+2026-03-26 03:46:21  ERROR     orderbook_ws          WS unexpected error: [Errno -5] No address associated with hostname  Reconnecting in 12s…
+2026-03-26 03:46:26  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:46:27  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:46:29  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:46:33  ERROR     risk_manager          refresh_from_api: failed to fetch positions: Max retries exceeded for get_positions
+2026-03-26 03:46:34  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 200 OK"
+2026-03-26 03:46:34  INFO      orderbook_ws          WS connecting → wss://ws-subscriptions.clob.polymarket.com/ws/  (5 tokens)
+2026-03-26 03:46:34  ERROR     orderbook_ws          WS unexpected error: [Errno -5] No address associated with hostname  Reconnecting in 24s…
+2026-03-26 03:46:49  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:46:50  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:46:52  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:46:56  ERROR     risk_manager          refresh_from_api: failed to fetch positions: Max retries exceeded for get_positions
+2026-03-26 03:46:57  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 200 OK"
+2026-03-26 03:46:58  INFO      orderbook_ws          WS connecting → wss://ws-subscriptions.clob.polymarket.com/ws/  (5 tokens)
+2026-03-26 03:46:58  ERROR     orderbook_ws          WS unexpected error: [Errno -5] No address associated with hostname  Reconnecting in 48s…
+2026-03-26 03:47:11  INFO      __main__              [STATS]  markets=5  positions=0  daily_pnl=$+0.00  unrealised=$+0.00  loss_room=$25.00  halt=False
+2026-03-26 03:47:12  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:47:13  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:47:15  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:47:19  ERROR     risk_manager          refresh_from_api: failed to fetch positions: Max retries exceeded for get_positions
+2026-03-26 03:47:19  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 200 OK"
+2026-03-26 03:47:34  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:47:35  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:47:37  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:47:41  ERROR     risk_manager          refresh_from_api: failed to fetch positions: Max retries exceeded for get_positions
+2026-03-26 03:47:42  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 200 OK"
+2026-03-26 03:47:46  INFO      orderbook_ws          WS connecting → wss://ws-subscriptions.clob.polymarket.com/ws/  (5 tokens)
+2026-03-26 03:47:46  ERROR     orderbook_ws          WS unexpected error: [Errno -5] No address associated with hostname  Reconnecting in 96s…
+2026-03-26 03:47:57  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:47:58  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:48:00  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:48:04  ERROR     risk_manager          refresh_from_api: failed to fetch positions: Max retries exceeded for get_positions
+2026-03-26 03:48:04  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 200 OK"
+2026-03-26 03:48:07  INFO      __main__              Signal received – requesting shutdown…
+2026-03-26 03:48:11  INFO      __main__              [STATS]  markets=5  positions=0  daily_pnl=$+0.00  unrealised=$+0.00  loss_room=$25.00  halt=False
+2026-03-26 03:48:19  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:48:20  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:48:22  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:48:26  ERROR     risk_manager          refresh_from_api: failed to fetch positions: Max retries exceeded for get_positions
+2026-03-26 03:48:27  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 200 OK"
+2026-03-26 03:48:42  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:48:43  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:48:45  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:48:49  ERROR     risk_manager          refresh_from_api: failed to fetch positions: Max retries exceeded for get_positions
+2026-03-26 03:48:49  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 200 OK"
+2026-03-26 03:49:00  INFO      __main__              Signal received – requesting shutdown…
+2026-03-26 03:49:04  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:49:05  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:49:07  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:49:11  ERROR     risk_manager          refresh_from_api: failed to fetch positions: Max retries exceeded for get_positions
+2026-03-26 03:49:12  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 200 OK"
+2026-03-26 03:49:12  INFO      __main__              [STATS]  markets=5  positions=0  daily_pnl=$+0.00  unrealised=$+0.00  loss_room=$25.00  halt=False
+2026-03-26 03:49:22  INFO      orderbook_ws          WS connecting → wss://ws-subscriptions.clob.polymarket.com/ws/  (5 tokens)
+2026-03-26 03:49:22  ERROR     orderbook_ws          WS unexpected error: [Errno -5] No address associated with hostname  Reconnecting in 120s…
+2026-03-26 03:49:27  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:49:28  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:49:30  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:49:34  ERROR     risk_manager          refresh_from_api: failed to fetch positions: Max retries exceeded for get_positions
+2026-03-26 03:49:34  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 200 OK"
+2026-03-26 03:49:49  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:49:50  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:49:52  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:49:56  ERROR     risk_manager          refresh_from_api: failed to fetch positions: Max retries exceeded for get_positions
+2026-03-26 03:49:57  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 200 OK"
+2026-03-26 03:50:12  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:50:13  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:50:15  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:50:19  ERROR     risk_manager          refresh_from_api: failed to fetch positions: Max retries exceeded for get_positions
+2026-03-26 03:50:19  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 200 OK"
+2026-03-26 03:50:19  INFO      __main__              [STATS]  markets=5  positions=0  daily_pnl=$+0.00  unrealised=$+0.00  loss_room=$25.00  halt=False
+2026-03-26 03:50:34  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:50:35  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:50:37  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 03:50:41  ERROR     risk_manager          refresh_from_api: failed to fetch positions: Max retries exceeded for get_positions
+2026-03-26 03:50:41  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 200 OK"
+2026-03-26 05:53:56  INFO      clob_client           PolymarketClient ready  mode=DRY-RUN
+2026-03-26 05:53:56  ERROR     position_merger       Cannot connect to Polygon RPC – merging disabled
+2026-03-26 05:53:56  INFO      __main__              =================================================================
+2026-03-26 05:53:56  INFO      __main__                Polymarket Market Making Bot  v2.0
+2026-03-26 05:53:56  INFO      __main__                Mode    : DRY-RUN (no real orders)
+2026-03-26 05:53:56  INFO      __main__                Markets : up to 5
+2026-03-26 05:53:56  INFO      __main__                Order $ : $10.0  max=$50.0
+2026-03-26 05:53:56  INFO      __main__                Spread  : 10–200 bps
+2026-03-26 05:53:56  INFO      __main__                Max pos : $200.0  daily stop=$25.0
+2026-03-26 05:53:56  INFO      __main__              =================================================================
+2026-03-26 05:53:57  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/balance-allowance?asset_type=COLLATERAL&signature_type=0 "HTTP/2 200 OK"
+2026-03-26 05:53:57  INFO      __main__              Wallet balance  USDC=$0.00  POL=0.0000
+2026-03-26 05:53:57  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_portfolio'
+2026-03-26 05:53:58  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_portfolio'
+2026-03-26 05:54:00  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_portfolio'
+2026-03-26 05:54:04  ERROR     risk_manager          refresh_from_api: failed to fetch positions: Max retries exceeded for get_positions
+2026-03-26 05:54:04  INFO      market_selector       Scanning Polymarket for suitable markets…
+2026-03-26 05:54:08  INFO      market_selector       Fetched 600 raw markets from Gamma API
+2026-03-26 05:54:08  INFO      market_selector         ✓  Kharg Island no longer under Iranian control by March 3  score=9.23  vol=$487,836 | spread=11.76% | rewards✓
+2026-03-26 05:54:08  INFO      market_selector         ✓  US x Iran ceasefire by March 31?                         score=8.60  vol=$3,809,975 | spread=8.00% | rewards✓
+2026-03-26 05:54:08  INFO      market_selector         ✓  Will Trump visit China by April 30?                      score=8.43  vol=$1,012,693 | spread=7.14% | rewards✓
+2026-03-26 05:54:08  INFO      market_selector         ✓  Will the Fed increase interest rates by 25 bps after th  score=7.96  vol=$569,729 | spread=4.80% | rewards✓
+2026-03-26 05:54:08  INFO      market_selector         ✓  Will the U.S. tariff rate on China be between 15% and 2  score=7.93  vol=$192,814 | spread=20.69% | rewards✓
+2026-03-26 05:54:08  INFO      market_selector       Selected 5 market(s) to trade.
+2026-03-26 05:54:08  INFO      order_manager         Registered market: Kharg Island no longer under Iranian control by March 3
+2026-03-26 05:54:08  INFO      order_manager         Registered market: US x Iran ceasefire by March 31?
+2026-03-26 05:54:08  INFO      order_manager         Registered market: Will Trump visit China by April 30?
+2026-03-26 05:54:08  INFO      order_manager         Registered market: Will the Fed increase interest rates by 25 bps after th
+2026-03-26 05:54:08  INFO      order_manager         Registered market: Will the U.S. tariff rate on China be between 15% and 2
+2026-03-26 05:54:08  INFO      __main__              Startup complete – trading 5 market(s)
+2026-03-26 05:54:08  INFO      __main__              All tasks started – bot is running. Press Ctrl+C to stop.
+2026-03-26 05:54:08  INFO      orderbook_ws          WS connecting → wss://ws-subscriptions-clob.polymarket.com/ws/market  (5 tokens)
+2026-03-26 05:54:08  INFO      orderbook_ws          WS connected. Subscribing…
+2026-03-26 05:54:23  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_portfolio'
+2026-03-26 05:54:24  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_portfolio'
+2026-03-26 05:54:26  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_portfolio'
+2026-03-26 05:54:30  ERROR     risk_manager          refresh_from_api: failed to fetch positions: Max retries exceeded for get_positions
+2026-03-26 05:54:31  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 200 OK"
+2026-03-26 05:54:46  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_portfolio'
+2026-03-26 05:54:47  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_portfolio'
+2026-03-26 05:54:49  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_portfolio'
+2026-03-26 05:54:53  ERROR     risk_manager          refresh_from_api: failed to fetch positions: Max retries exceeded for get_positions
+2026-03-26 05:54:53  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 200 OK"
+2026-03-26 05:55:08  INFO      __main__              [STATS]  markets=5  positions=0  daily_pnl=$+0.00  unrealised=$+0.00  loss_room=$25.00  halt=False
+2026-03-26 05:55:08  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_portfolio'
+2026-03-26 05:55:09  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_portfolio'
+2026-03-26 05:55:11  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_portfolio'
+2026-03-26 05:55:15  ERROR     risk_manager          refresh_from_api: failed to fetch positions: Max retries exceeded for get_positions
+2026-03-26 05:55:16  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 200 OK"
+2026-03-26 05:55:31  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_portfolio'
+2026-03-26 05:55:32  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_portfolio'
+2026-03-26 05:55:34  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_portfolio'
+2026-03-26 05:55:38  ERROR     risk_manager          refresh_from_api: failed to fetch positions: Max retries exceeded for get_positions
+2026-03-26 05:55:39  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 200 OK"
+2026-03-26 05:55:54  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_portfolio'
+2026-03-26 05:55:55  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_portfolio'
+2026-03-26 05:55:57  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_portfolio'
+2026-03-26 05:56:01  ERROR     risk_manager          refresh_from_api: failed to fetch positions: Max retries exceeded for get_positions
+2026-03-26 05:56:01  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 200 OK"
+2026-03-26 05:56:08  INFO      __main__              [STATS]  markets=5  positions=0  daily_pnl=$+0.00  unrealised=$+0.00  loss_room=$25.00  halt=False
+2026-03-26 05:56:14  INFO      __main__              Signal received – requesting shutdown…
+2026-03-26 05:56:16  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_portfolio'
+2026-03-26 05:56:17  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_portfolio'
+2026-03-26 05:56:19  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_portfolio'
+2026-03-26 05:56:23  ERROR     risk_manager          refresh_from_api: failed to fetch positions: Max retries exceeded for get_positions
+2026-03-26 05:56:24  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 200 OK"
+2026-03-26 05:56:24  INFO      __main__              Signal received – requesting shutdown…
+2026-03-26 05:56:24  INFO      __main__              Signal received – requesting shutdown…
+2026-03-26 05:56:24  INFO      __main__              Signal received – requesting shutdown…
+2026-03-26 05:56:39  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_portfolio'
+2026-03-26 05:56:40  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_portfolio'
+2026-03-26 05:56:42  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_portfolio'
+2026-03-26 05:56:46  ERROR     risk_manager          refresh_from_api: failed to fetch positions: Max retries exceeded for get_positions
+2026-03-26 05:56:47  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 200 OK"
+2026-03-26 05:57:02  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_portfolio'
+2026-03-26 05:57:03  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_portfolio'
+2026-03-26 05:57:05  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_portfolio'
+2026-03-26 06:05:14  INFO      clob_client           PolymarketClient ready  mode=DRY-RUN
+2026-03-26 06:05:15  ERROR     position_merger       Cannot connect to Polygon RPC – merging disabled
+2026-03-26 06:05:15  INFO      __main__              =================================================================
+2026-03-26 06:05:15  INFO      __main__                Polymarket Market Making Bot  v2.0
+2026-03-26 06:05:15  INFO      __main__                Mode    : DRY-RUN (no real orders)
+2026-03-26 06:05:15  INFO      __main__                Markets : up to 5
+2026-03-26 06:05:15  INFO      __main__                Order $ : $10.0  max=$50.0
+2026-03-26 06:05:15  INFO      __main__                Spread  : 10–200 bps
+2026-03-26 06:05:15  INFO      __main__                Max pos : $200.0  daily stop=$25.0
+2026-03-26 06:05:15  INFO      __main__              =================================================================
+2026-03-26 06:05:15  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/balance-allowance?asset_type=COLLATERAL&signature_type=0 "HTTP/2 200 OK"
+2026-03-26 06:05:15  INFO      __main__              Wallet balance  USDC=$0.00  POL=0.0000
+2026-03-26 06:05:15  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 06:05:16  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 06:05:18  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 06:05:22  ERROR     risk_manager          refresh_from_api: failed to fetch positions: Max retries exceeded for get_positions
+2026-03-26 06:05:22  INFO      market_selector       Scanning Polymarket for suitable markets…
+2026-03-26 06:05:26  INFO      market_selector       Fetched 600 raw markets from Gamma API
+2026-03-26 06:05:26  INFO      market_selector         ✓  Will Trump visit China by April 30?                      score=11.00  vol=$1,028,561 | spread=20.41% | rewards✓
+2026-03-26 06:05:26  INFO      market_selector         ✓  Kharg Island no longer under Iranian control by March 3  score=10.88  vol=$488,451 | spread=25.00% | rewards✓
+2026-03-26 06:05:26  INFO      market_selector         ✓  US x Iran ceasefire by March 31?                         score=10.08  vol=$3,813,991 | spread=15.38% | rewards✓
+2026-03-26 06:05:26  INFO      market_selector         ✓  Will Troels Lund Poulsen be the next prime minister of   score=9.78  vol=$378,245 | spread=20.18% | rewards✓
+2026-03-26 06:05:26  INFO      market_selector         ✓  Will Purdue win the 2026 NCAA Tournament?                score=8.60  vol=$659,397 | spread=8.00% | rewards✓
+2026-03-26 06:05:26  INFO      market_selector       Selected 5 market(s) to trade.
+2026-03-26 06:05:26  INFO      order_manager         Registered market: Will Trump visit China by April 30?
+2026-03-26 06:05:26  INFO      order_manager         Registered market: Kharg Island no longer under Iranian control by March 3
+2026-03-26 06:05:26  INFO      order_manager         Registered market: US x Iran ceasefire by March 31?
+2026-03-26 06:05:26  INFO      order_manager         Registered market: Will Troels Lund Poulsen be the next prime minister of 
+2026-03-26 06:05:26  INFO      order_manager         Registered market: Will Purdue win the 2026 NCAA Tournament?
+2026-03-26 06:05:26  INFO      __main__              Startup complete – trading 5 market(s)
+2026-03-26 06:05:26  INFO      __main__              All tasks started – bot is running. Press Ctrl+C to stop.
+2026-03-26 06:05:26  INFO      orderbook_ws          WS connecting → wss://ws-subscriptions-clob.polymarket.com/ws/market  (5 tokens)
+2026-03-26 06:05:27  INFO      orderbook_ws          WS connected. Subscribing…
+2026-03-26 06:05:41  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 06:05:42  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 06:05:44  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 06:05:48  ERROR     risk_manager          refresh_from_api: failed to fetch positions: Max retries exceeded for get_positions
+2026-03-26 06:05:49  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 200 OK"
+2026-03-26 06:06:04  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 06:06:05  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 06:06:07  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 06:06:11  ERROR     risk_manager          refresh_from_api: failed to fetch positions: Max retries exceeded for get_positions
+2026-03-26 06:06:11  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 200 OK"
+2026-03-26 13:06:54  INFO      clob_client           PolymarketClient ready  mode=DRY-RUN
+2026-03-26 13:06:55  ERROR     position_merger       Cannot connect to Polygon RPC – merging disabled
+2026-03-26 13:06:55  INFO      __main__              =================================================================
+2026-03-26 13:06:55  INFO      __main__                Polymarket Market Making Bot  v2.0
+2026-03-26 13:06:55  INFO      __main__                Mode    : DRY-RUN (no real orders)
+2026-03-26 13:06:55  INFO      __main__                Markets : up to 5
+2026-03-26 13:06:55  INFO      __main__                Order $ : $10.0  max=$50.0
+2026-03-26 13:06:55  INFO      __main__                Spread  : 10–200 bps
+2026-03-26 13:06:55  INFO      __main__                Max pos : $200.0  daily stop=$25.0
+2026-03-26 13:06:55  INFO      __main__              =================================================================
+2026-03-26 13:06:56  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/balance-allowance?asset_type=COLLATERAL&signature_type=0 "HTTP/2 401 Unauthorized"
+2026-03-26 13:06:56  ERROR     clob_client           Non-retryable API error [401]: PolyApiException[status_code=401, error_message={'error': 'Unauthorized/Invalid api key'}]
+2026-03-26 13:06:56  WARNING   __main__              Balance check failed (PolyApiException[status_code=401, error_message={'error': 'Unauthorized/Invalid api key'}]) – proceeding (normal during first-time setup)
+2026-03-26 13:06:56  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 13:06:57  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 13:06:59  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 13:07:03  ERROR     risk_manager          refresh_from_api: failed to fetch positions: Max retries exceeded for get_positions
+2026-03-26 13:07:03  INFO      market_selector       Scanning Polymarket for suitable markets…
+2026-03-26 13:07:06  INFO      market_selector       Fetched 600 raw markets from Gamma API
+2026-03-26 13:07:06  INFO      market_selector         ✓  Will Real Salt Lake win the 2026 MLS Cup?                score=9.14  vol=$698,631 | spread=10.71% | rewards✓
+2026-03-26 13:07:06  INFO      market_selector         ✓  US x Iran ceasefire by March 31?                         score=9.11  vol=$2,088,363 | spread=10.53% | rewards✓
+2026-03-26 13:07:06  INFO      market_selector         ✓  Will the Iranian regime fall by April 30?                score=9.11  vol=$543,933 | spread=10.53% | rewards✓
+2026-03-26 13:07:06  INFO      market_selector         ✓  Pittsburgh Pirates vs. New York Mets                     score=9.11  vol=$499,978 | spread=10.53% | rewards✓
+2026-03-26 13:07:06  INFO      market_selector         ✓  Kharg Island no longer under Iranian control by March 3  score=8.53  vol=$479,491 | spread=8.70% | rewards✓
+2026-03-26 13:07:06  INFO      market_selector       Selected 5 market(s) to trade.
+2026-03-26 13:07:06  INFO      order_manager         Registered market: Will Real Salt Lake win the 2026 MLS Cup?
+2026-03-26 13:07:06  INFO      order_manager         Registered market: US x Iran ceasefire by March 31?
+2026-03-26 13:07:06  INFO      order_manager         Registered market: Will the Iranian regime fall by April 30?
+2026-03-26 13:07:06  INFO      order_manager         Registered market: Pittsburgh Pirates vs. New York Mets
+2026-03-26 13:07:06  INFO      order_manager         Registered market: Kharg Island no longer under Iranian control by March 3
+2026-03-26 13:07:06  INFO      __main__              Startup complete – trading 5 market(s)
+2026-03-26 13:07:06  INFO      __main__              All tasks started – bot is running. Press Ctrl+C to stop.
+2026-03-26 13:07:06  INFO      orderbook_ws          WS connecting → wss://ws-subscriptions-clob.polymarket.com/ws/market  (5 tokens)
+2026-03-26 13:07:07  INFO      orderbook_ws          WS connected. Subscribing…
+2026-03-26 13:07:21  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 13:07:22  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 13:07:24  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 13:07:28  ERROR     risk_manager          refresh_from_api: failed to fetch positions: Max retries exceeded for get_positions
+2026-03-26 13:07:29  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 401 Unauthorized"
+2026-03-26 13:07:29  ERROR     clob_client           Non-retryable API error [401]: PolyApiException[status_code=401, error_message={'error': 'Unauthorized/Invalid api key'}]
+2026-03-26 13:07:29  WARNING   order_manager         sync_open_orders failed: PolyApiException[status_code=401, error_message={'error': 'Unauthorized/Invalid api key'}]
+2026-03-26 13:07:44  WARNING   clob_client           get_positions attempt 1/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 13:07:45  WARNING   clob_client           get_positions attempt 2/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 13:07:47  WARNING   clob_client           get_positions attempt 3/3 error: 'ClobClient' object has no attribute 'get_positions'
+2026-03-26 14:02:47  INFO      clob_client           PolymarketClient ready  mode=DRY-RUN
+2026-03-26 14:02:48  ERROR     position_merger       Cannot connect to Polygon RPC – merging disabled
+2026-03-26 14:02:48  INFO      __main__              =================================================================
+2026-03-26 14:02:48  INFO      __main__                Polymarket Market Making Bot  v2.0
+2026-03-26 14:02:48  INFO      __main__                Mode    : DRY-RUN (no real orders)
+2026-03-26 14:02:48  INFO      __main__                Markets : up to 5
+2026-03-26 14:02:48  INFO      __main__                Order $ : $10.0  max=$50.0
+2026-03-26 14:02:48  INFO      __main__                Spread  : 10–200 bps
+2026-03-26 14:02:48  INFO      __main__                Max pos : $200.0  daily stop=$25.0
+2026-03-26 14:02:48  INFO      __main__              =================================================================
+2026-03-26 14:02:49  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/balance-allowance?asset_type=COLLATERAL&signature_type=0 "HTTP/2 401 Unauthorized"
+2026-03-26 14:02:49  ERROR     clob_client           Non-retryable API error [401]: PolyApiException[status_code=401, error_message={'error': 'Unauthorized/Invalid api key'}]
+2026-03-26 14:02:49  WARNING   __main__              Balance check failed (PolyApiException[status_code=401, error_message={'error': 'Unauthorized/Invalid api key'}]) – proceeding (normal during first-time setup)
+2026-03-26 14:02:49  WARNING   clob_client           PROXY_WALLET not set in .env – cannot fetch live positions. Run setup_credentials.py and add PROXY_WALLET to your .env file.
+2026-03-26 14:02:49  INFO      risk_manager          Positions refreshed from API  (0 tokens held)
+2026-03-26 14:02:49  INFO      market_selector       Scanning Polymarket for suitable markets…
+2026-03-26 14:02:52  INFO      market_selector       Fetched 600 raw markets from Gamma API
+2026-03-26 14:02:52  INFO      market_selector         ✓  US x Iran ceasefire by March 31?                         score=9.35  vol=$1,876,672 | spread=11.76% | rewards✓
+2026-03-26 14:02:52  INFO      market_selector         ✓  Will the Iranian regime fall by April 30?                score=9.35  vol=$575,708 | spread=11.76% | rewards✓
+2026-03-26 14:02:52  INFO      market_selector         ✓  Will the Fed increase interest rates by 25 bps after th  score=9.14  vol=$649,270 | spread=10.71% | rewards✓
+2026-03-26 14:02:52  INFO      market_selector         ✓  Kharg Island no longer under Iranian control by March 3  score=8.41  vol=$466,727 | spread=8.70% | rewards✓
+2026-03-26 14:02:52  INFO      market_selector         ✓  Will Elon Musk post 240-259 tweets from March 20 to Mar  score=8.28  vol=$421,468 | spread=10.34% | rewards✓
+2026-03-26 14:02:52  INFO      market_selector       Selected 5 market(s) to trade.
+2026-03-26 14:02:52  INFO      order_manager         Registered market: US x Iran ceasefire by March 31?
+2026-03-26 14:02:52  INFO      order_manager         Registered market: Will the Iranian regime fall by April 30?
+2026-03-26 14:02:52  INFO      order_manager         Registered market: Will the Fed increase interest rates by 25 bps after th
+2026-03-26 14:02:52  INFO      order_manager         Registered market: Kharg Island no longer under Iranian control by March 3
+2026-03-26 14:02:52  INFO      order_manager         Registered market: Will Elon Musk post 240-259 tweets from March 20 to Mar
+2026-03-26 14:02:52  INFO      __main__              Startup complete – trading 5 market(s)
+2026-03-26 14:02:52  INFO      __main__              All tasks started – bot is running. Press Ctrl+C to stop.
+2026-03-26 14:02:52  INFO      orderbook_ws          WS connecting → wss://ws-subscriptions-clob.polymarket.com/ws/market  (5 tokens)
+2026-03-26 14:02:53  INFO      orderbook_ws          WS connected. Subscribing…
+2026-03-26 14:03:07  WARNING   clob_client           PROXY_WALLET not set in .env – cannot fetch live positions. Run setup_credentials.py and add PROXY_WALLET to your .env file.
+2026-03-26 14:03:07  INFO      risk_manager          Positions refreshed from API  (0 tokens held)
+2026-03-26 14:03:07  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 401 Unauthorized"
+2026-03-26 14:03:07  ERROR     clob_client           Non-retryable API error [401]: PolyApiException[status_code=401, error_message={'error': 'Unauthorized/Invalid api key'}]
+2026-03-26 14:03:07  WARNING   order_manager         sync_open_orders failed: PolyApiException[status_code=401, error_message={'error': 'Unauthorized/Invalid api key'}]
+2026-03-26 14:03:22  WARNING   clob_client           PROXY_WALLET not set in .env – cannot fetch live positions. Run setup_credentials.py and add PROXY_WALLET to your .env file.
+2026-03-26 14:03:22  INFO      risk_manager          Positions refreshed from API  (0 tokens held)
+2026-03-26 14:03:23  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 401 Unauthorized"
+2026-03-26 14:03:23  ERROR     clob_client           Non-retryable API error [401]: PolyApiException[status_code=401, error_message={'error': 'Unauthorized/Invalid api key'}]
+2026-03-26 14:03:23  WARNING   order_manager         sync_open_orders failed: PolyApiException[status_code=401, error_message={'error': 'Unauthorized/Invalid api key'}]
+2026-03-26 14:03:38  WARNING   clob_client           PROXY_WALLET not set in .env – cannot fetch live positions. Run setup_credentials.py and add PROXY_WALLET to your .env file.
+2026-03-26 14:03:38  INFO      risk_manager          Positions refreshed from API  (0 tokens held)
+2026-03-26 14:03:39  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 401 Unauthorized"
+2026-03-26 14:03:39  ERROR     clob_client           Non-retryable API error [401]: PolyApiException[status_code=401, error_message={'error': 'Unauthorized/Invalid api key'}]
+2026-03-26 14:03:39  WARNING   order_manager         sync_open_orders failed: PolyApiException[status_code=401, error_message={'error': 'Unauthorized/Invalid api key'}]
+2026-03-26 14:03:52  INFO      __main__              [STATS]  markets=5  positions=0  daily_pnl=$+0.00  unrealised=$+0.00  loss_room=$25.00  halt=False
+2026-03-26 14:03:54  WARNING   clob_client           PROXY_WALLET not set in .env – cannot fetch live positions. Run setup_credentials.py and add PROXY_WALLET to your .env file.
+2026-03-26 14:03:54  INFO      risk_manager          Positions refreshed from API  (0 tokens held)
+2026-03-26 14:03:54  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 401 Unauthorized"
+2026-03-26 14:03:54  ERROR     clob_client           Non-retryable API error [401]: PolyApiException[status_code=401, error_message={'error': 'Unauthorized/Invalid api key'}]
+2026-03-26 14:03:54  WARNING   order_manager         sync_open_orders failed: PolyApiException[status_code=401, error_message={'error': 'Unauthorized/Invalid api key'}]
+2026-03-26 14:04:09  WARNING   clob_client           PROXY_WALLET not set in .env – cannot fetch live positions. Run setup_credentials.py and add PROXY_WALLET to your .env file.
+2026-03-26 14:04:09  INFO      risk_manager          Positions refreshed from API  (0 tokens held)
+2026-03-26 14:04:10  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 401 Unauthorized"
+2026-03-26 14:04:10  ERROR     clob_client           Non-retryable API error [401]: PolyApiException[status_code=401, error_message={'error': 'Unauthorized/Invalid api key'}]
+2026-03-26 14:04:10  WARNING   order_manager         sync_open_orders failed: PolyApiException[status_code=401, error_message={'error': 'Unauthorized/Invalid api key'}]
+2026-03-26 14:04:25  WARNING   clob_client           PROXY_WALLET not set in .env – cannot fetch live positions. Run setup_credentials.py and add PROXY_WALLET to your .env file.
+2026-03-26 14:04:25  INFO      risk_manager          Positions refreshed from API  (0 tokens held)
+2026-03-26 14:04:26  INFO      httpx                 HTTP Request: GET https://clob.polymarket.com/data/orders?next_cursor=MA== "HTTP/2 401 Unauthorized"
+2026-03-26 14:04:26  ERROR     clob_client           Non-retryable API error [401]: PolyApiException[status_code=401, error_message={'error': 'Unauthorized/Invalid api key'}]
+2026-03-26 14:04:26  WARNING   order_manager         sync_open_orders failed: PolyApiException[status_code=401, error_message={'error': 'Unauthorized/Invalid api key'}]
+2026-03-26 15:03:35  WARNING   clob_client           No API credentials found in env. Order placement will be unavailable until you run setup_credentials.py.
+2026-03-26 15:03:35  INFO      clob_client           PolymarketClient ready  mode=DRY-RUN
+2026-03-26 15:03:36  ERROR     position_merger       Cannot connect to Polygon RPC – merging disabled
+2026-03-26 15:03:36  INFO      __main__              =================================================================
+2026-03-26 15:03:36  INFO      __main__                Polymarket Market Making Bot  v2.0
+2026-03-26 15:03:36  INFO      __main__                Mode    : DRY-RUN (no real orders)
+2026-03-26 15:03:36  INFO      __main__                Markets : up to 5
+2026-03-26 15:03:36  INFO      __main__                Order $ : $10.0  max=$50.0
+2026-03-26 15:03:36  INFO      __main__                Spread  : 10–200 bps
+2026-03-26 15:03:36  INFO      __main__                Max pos : $200.0  daily stop=$25.0
+2026-03-26 15:03:36  INFO      __main__              =================================================================
+2026-03-26 15:03:36  WARNING   clob_client           get_balance attempt 1/3 error: API Credentials are needed to interact with this endpoint!
+2026-03-26 15:03:37  WARNING   clob_client           get_balance attempt 2/3 error: API Credentials are needed to interact with this endpoint!
+2026-03-26 15:03:39  WARNING   clob_client           get_balance attempt 3/3 error: API Credentials are needed to interact with this endpoint!
+2026-03-26 15:03:43  WARNING   __main__              Balance check failed (Max retries exceeded for get_balance) – proceeding (normal during first-time setup)
+2026-03-26 15:03:43  WARNING   clob_client           PROXY_WALLET not set in .env – cannot fetch live positions. Run setup_credentials.py and add PROXY_WALLET to your .env file.
+2026-03-26 15:03:43  INFO      risk_manager          Positions refreshed from API  (0 tokens held)
+2026-03-26 15:03:43  INFO      market_selector       Scanning Polymarket for suitable markets…
+2026-03-26 15:03:46  INFO      market_selector       Fetched 600 raw markets from Gamma API
+2026-03-26 15:03:46  INFO      market_selector         ✓  US x Iran ceasefire by March 31?                         score=9.67  vol=$1,806,163 | spread=13.33% | rewards✓
+2026-03-26 15:03:46  INFO      market_selector         ✓  Will the Iranian regime fall by April 30?                score=9.11  vol=$578,384 | spread=10.53% | rewards✓
+2026-03-26 15:03:46  INFO      market_selector         ✓  Will Troels Lund Poulsen be the next prime minister of   score=8.63  vol=$262,847 | spread=55.42% | rewards✓
+2026-03-26 15:03:46  INFO      market_selector         ✓  Will Sweden win the televote for Eurovision 2026?        score=8.38  vol=$645,604 | spread=6.90% | rewards✓
+2026-03-26 15:03:46  INFO      market_selector         ✓  Kharg Island no longer under Iranian control by March 3  score=8.14  vol=$453,545 | spread=8.00% | rewards✓
+2026-03-26 15:03:46  INFO      market_selector       Selected 5 market(s) to trade.
+2026-03-26 15:03:46  INFO      order_manager         Registered market: US x Iran ceasefire by March 31?
+2026-03-26 15:03:46  INFO      order_manager         Registered market: Will the Iranian regime fall by April 30?
+2026-03-26 15:03:46  INFO      order_manager         Registered market: Will Troels Lund Poulsen be the next prime minister of 
+2026-03-26 15:03:46  INFO      order_manager         Registered market: Will Sweden win the televote for Eurovision 2026?
+2026-03-26 15:03:46  INFO      order_manager         Registered market: Kharg Island no longer under Iranian control by March 3
+2026-03-26 15:03:46  INFO      __main__              Startup complete – trading 5 market(s)
+2026-03-26 15:03:46  INFO      __main__              All tasks started – bot is running. Press Ctrl+C to stop.
+2026-03-26 15:03:46  INFO      orderbook_ws          WS connecting → wss://ws-subscriptions-clob.polymarket.com/ws/market  (5 tokens)
+2026-03-26 15:03:47  INFO      orderbook_ws          WS connected. Subscribing…
+2026-03-26 15:04:02  WARNING   clob_client           PROXY_WALLET not set in .env – cannot fetch live positions. Run setup_credentials.py and add PROXY_WALLET to your .env file.
+2026-03-26 15:04:02  INFO      risk_manager          Positions refreshed from API  (0 tokens held)
+2026-03-26 15:04:02  WARNING   clob_client           get_open_orders attempt 1/3 error: API Credentials are needed to interact with this endpoint!
+2026-03-26 15:04:03  WARNING   clob_client           get_open_orders attempt 2/3 error: API Credentials are needed to interact with this endpoint!
+2026-03-26 15:04:05  WARNING   clob_client           get_open_orders attempt 3/3 error: API Credentials are needed to interact with this endpoint!
+2026-03-26 15:04:09  WARNING   order_manager         sync_open_orders failed: Max retries exceeded for get_open_orders
+2026-03-27 00:34:02  WARNING   clob_client           No API credentials found in env. Order placement will be unavailable until you run setup_credentials.py.
+2026-03-27 00:34:02  INFO      clob_client           PolymarketClient ready  mode=LIVE
+2026-03-27 00:34:02  ERROR     position_merger       Cannot connect to Polygon RPC – merging disabled
+2026-03-27 00:34:02  INFO      __main__              =================================================================
+2026-03-27 00:34:02  INFO      __main__                Polymarket Market Making Bot  v2.0
+2026-03-27 00:34:02  INFO      __main__                Mode    : ⚠️  LIVE TRADING
+2026-03-27 00:34:02  INFO      __main__                Markets : up to 5
+2026-03-27 00:34:02  INFO      __main__                Order $ : $3.0  max=$50.0
+2026-03-27 00:34:02  INFO      __main__                Spread  : 10–200 bps
+2026-03-27 00:34:02  INFO      __main__                Max pos : $200.0  daily stop=$25.0
+2026-03-27 00:34:02  INFO      __main__              =================================================================
+2026-03-27 00:34:02  WARNING   clob_client           get_balance attempt 1/3 error: API Credentials are needed to interact with this endpoint!
+2026-03-27 00:34:03  WARNING   clob_client           get_balance attempt 2/3 error: API Credentials are needed to interact with this endpoint!
+2026-03-27 00:34:05  WARNING   clob_client           get_balance attempt 3/3 error: API Credentials are needed to interact with this endpoint!
+2026-03-27 00:34:09  WARNING   __main__              Balance check failed (Max retries exceeded for get_balance) – proceeding (normal during first-time setup)
+2026-03-27 00:34:09  WARNING   clob_client           PROXY_WALLET not set in .env – cannot fetch live positions. Run setup_credentials.py and add PROXY_WALLET to your .env file.
+2026-03-27 00:34:09  INFO      risk_manager          Positions refreshed from API  (0 tokens held)
+2026-03-27 00:34:09  INFO      market_selector       Scanning Polymarket for suitable markets…
+2026-03-27 00:34:12  INFO      market_selector       Fetched 600 raw markets from Gamma API
+2026-03-27 00:34:12  INFO      market_selector         ✓  US x Iran ceasefire by March 31?                         score=11.00  vol=$2,312,978 | spread=22.22% | rewards✓
+2026-03-27 00:34:12  INFO      market_selector         ✓  Kharg Island no longer under Iranian control by March 3  score=10.08  vol=$723,282 | spread=15.38% | rewards✓
+2026-03-27 00:34:12  INFO      market_selector         ✓  Will the Iranian regime fall by April 30?                score=9.35  vol=$748,709 | spread=11.76% | rewards✓
+2026-03-27 00:34:12  INFO      market_selector         ✓  Will Tom Steyer win the California Governor Election in  score=8.22  vol=$753,041 | spread=6.11% | rewards✓
+2026-03-27 00:34:12  INFO      market_selector         ✓  US forces enter Iran by March 31?                        score=8.21  vol=$2,276,348 | spread=6.06% | rewards✓
+2026-03-27 00:34:12  INFO      market_selector       Selected 5 market(s) to trade.
+2026-03-27 00:34:12  INFO      order_manager         Registered market: US x Iran ceasefire by March 31?
+2026-03-27 00:34:12  INFO      order_manager         Registered market: Kharg Island no longer under Iranian control by March 3
+2026-03-27 00:34:12  INFO      order_manager         Registered market: Will the Iranian regime fall by April 30?
+2026-03-27 00:34:12  INFO      order_manager         Registered market: Will Tom Steyer win the California Governor Election in
+2026-03-27 00:34:12  INFO      order_manager         Registered market: US forces enter Iran by March 31?
+2026-03-27 00:34:12  INFO      __main__              Startup complete – trading 5 market(s)
+2026-03-27 00:34:12  INFO      __main__              All tasks started – bot is running. Press Ctrl+C to stop.
+2026-03-27 00:34:12  INFO      orderbook_ws          WS connecting → wss://ws-subscriptions-clob.polymarket.com/ws/market  (5 tokens)
+2026-03-27 00:34:13  INFO      orderbook_ws          WS connected. Subscribing…
+2026-03-27 00:34:27  WARNING   clob_client           PROXY_WALLET not set in .env – cannot fetch live positions. Run setup_credentials.py and add PROXY_WALLET to your .env file.
+2026-03-27 00:34:27  INFO      risk_manager          Positions refreshed from API  (0 tokens held)
+2026-03-27 00:34:27  WARNING   clob_client           get_open_orders attempt 1/3 error: API Credentials are needed to interact with this endpoint!
+2026-03-27 00:34:28  WARNING   clob_client           get_open_orders attempt 2/3 error: API Credentials are needed to interact with this endpoint!
+2026-03-27 00:34:30  WARNING   clob_client           get_open_orders attempt 3/3 error: API Credentials are needed to interact with this endpoint!
+2026-03-27 00:34:34  WARNING   order_manager         sync_open_orders failed: Max retries exceeded for get_open_orders
+2026-03-27 00:34:49  WARNING   clob_client           PROXY_WALLET not set in .env – cannot fetch live positions. Run setup_credentials.py and add PROXY_WALLET to your .env file.
+2026-03-27 00:34:49  INFO      risk_manager          Positions refreshed from API  (0 tokens held)
+2026-03-27 00:34:49  WARNING   clob_client           get_open_orders attempt 1/3 error: API Credentials are needed to interact with this endpoint!
+2026-03-27 00:34:50  WARNING   clob_client           get_open_orders attempt 2/3 error: API Credentials are needed to interact with this endpoint!
+2026-03-27 00:34:52  WARNING   clob_client           get_open_orders attempt 3/3 error: API Credentials are needed to interact with this endpoint!
+2026-03-27 00:34:56  WARNING   order_manager         sync_open_orders failed: Max retries exceeded for get_open_orders
+2026-03-27 00:35:11  WARNING   clob_client           PROXY_WALLET not set in .env – cannot fetch live positions. Run setup_credentials.py and add PROXY_WALLET to your .env file.
+2026-03-27 00:35:11  INFO      risk_manager          Positions refreshed from API  (0 tokens held)
+2026-03-27 00:35:11  WARNING   clob_client           get_open_orders attempt 1/3 error: API Credentials are needed to interact with this endpoint!
+2026-03-27 00:35:12  WARNING   clob_client           get_open_orders attempt 2/3 error: API Credentials are needed to interact with this endpoint!
+2026-03-27 00:35:14  WARNING   clob_client           get_open_orders attempt 3/3 error: API Credentials are needed to interact with this endpoint!
+2026-03-27 00:35:18  WARNING   order_manager         sync_open_orders failed: Max retries exceeded for get_open_orders
+2026-03-27 00:35:18  INFO      __main__              [STATS]  markets=5  positions=0  daily_pnl=$+0.00  unrealised=$+0.00  loss_room=$25.00  halt=False
+2026-03-27 00:35:33  WARNING   clob_client           PROXY_WALLET not set in .env – cannot fetch live positions. Run setup_credentials.py and add PROXY_WALLET to your .env file.
+2026-03-27 00:35:33  INFO      risk_manager          Positions refreshed from API  (0 tokens held)
+2026-03-27 00:35:33  WARNING   clob_client           get_open_orders attempt 1/3 error: API Credentials are needed to interact with this endpoint!
+2026-03-27 00:35:34  WARNING   clob_client           get_open_orders attempt 2/3 error: API Credentials are needed to interact with this endpoint!
+2026-03-27 00:35:36  WARNING   clob_client           get_open_orders attempt 3/3 error: API Credentials are needed to interact with this endpoint!
+2026-03-27 00:35:40  WARNING   order_manager         sync_open_orders failed: Max retries exceeded for get_open_orders

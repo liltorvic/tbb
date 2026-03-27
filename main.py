@@ -175,7 +175,7 @@ class MarketMakingBot:
     async def _market_refresh_loop(self):
         """Re-select markets periodically and hot-swap subscriptions."""
         while self._running:
-            await asyncio.sleep(self.config.MARKET_REFRESH_INTERVAL)
+            await self._interruptible_sleep(self.config.MARKET_REFRESH_INTERVAL)
             logger.info("Market refresh triggered…")
             try:
                 new_markets = self.selector.select_markets(force=True)
@@ -186,7 +186,7 @@ class MarketMakingBot:
     async def _risk_monitor_loop(self):
         """Poll risk state: stop-losses, daily limit, order sync."""
         while self._running:
-            await asyncio.sleep(15)
+            await self._interruptible_sleep(15)
             try:
                 self.risk.maybe_reset_daily_pnl()
 
@@ -215,19 +215,19 @@ class MarketMakingBot:
 
     async def _merge_loop(self):
         """Run position merging once per MERGE_INTERVAL (default: 1 h)."""
-        await asyncio.sleep(300)  # allow positions to build up first
+        await self._interruptible_sleep(300)  # allow positions to build up first
         while self._running:
             try:
                 logger.info("Merge cycle starting…")
                 self.merger.batch_merge_all(self.client, self.active_markets)
             except Exception as exc:
                 logger.error(f"merge_loop: {exc}")
-            await asyncio.sleep(self.config.MERGE_INTERVAL)
+            await self._interruptible_sleep(self.config.MERGE_INTERVAL)
 
     async def _stats_loop(self):
         """Print a periodic status summary."""
         while self._running:
-            await asyncio.sleep(60)
+            await self._interruptible_sleep(60)
             s = self.risk.summary()
             logger.info(
                 f"[STATS]  markets={len(self.active_markets)}  "
@@ -267,15 +267,20 @@ class MarketMakingBot:
         if self._ws_feed:
             self._ws_feed.stop()
 
-        await self.order_mgr.cancel_all()
+        try:
+            await self.order_mgr.cancel_all()
+        except Exception as exc:
+            logger.warning(f"Error cancelling orders during shutdown: {exc}")
 
+        # Cancel all tasks and wait with a hard timeout
         for t in tasks:
             if not t.done():
                 t.cancel()
-                try:
-                    await t
-                except (asyncio.CancelledError, Exception):
-                    pass
+
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        for task, result in zip(tasks, results):
+            if isinstance(result, Exception) and not isinstance(result, asyncio.CancelledError):
+                logger.warning(f"Task {task.get_name()!r} errored during shutdown: {result}")
 
         logger.info("Bot shut down cleanly. Goodbye.")
 
@@ -283,6 +288,13 @@ class MarketMakingBot:
         self._stop_event.set()
 
     # ── Helpers ────────────────────────────────────────────────────────────────
+
+    async def _interruptible_sleep(self, seconds: float):
+        """Sleep that wakes early if the stop event is set."""
+        try:
+            await asyncio.wait_for(self._stop_event.wait(), timeout=seconds)
+        except asyncio.TimeoutError:
+            pass
 
     def _yes_token_ids(self):
         return [
@@ -315,6 +327,12 @@ async def main():
     def _on_signal():
         logger.info("Signal received – requesting shutdown…")
         bot.request_stop()
+        # On second signal, force exit
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            try:
+                loop.add_signal_handler(sig, lambda: sys.exit(1))
+            except (NotImplementedError, OSError):
+                pass
 
     for sig in (signal.SIGINT, signal.SIGTERM):
         try:

@@ -29,7 +29,7 @@ class Config:
 
     # ── Chain ──────────────────────────────────────────────────────────────────
     CHAIN_ID: int = 137  # Polygon mainnet
-    POLYGON_RPC: str = os.getenv("POLYGON_RPC", "https://polygon-rpc.com")
+    POLYGON_RPC: str = os.getenv("POLYGON_RPC", "https://rpc.ankr.com/polygon")
 
     # ── Trading Mode ───────────────────────────────────────────────────────────
     # DRY_RUN=true  → logs orders but never submits them (safe default)

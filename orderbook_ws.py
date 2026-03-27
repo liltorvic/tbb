@@ -207,6 +207,7 @@ class OrderBookFeed:
         try:
             payload = json.loads(raw)
         except json.JSONDecodeError:
+            logger.warning("WS received non-JSON message – ignoring")
             return
 
         # The feed sends either a single dict or a list of events
@@ -216,12 +217,20 @@ class OrderBookFeed:
             etype = event.get("event_type") or event.get("type", "")
 
             if etype == "book":
+                tid = event.get("asset_id") or event.get("market_id", "?")
+                n_bids = len(event.get("bids", []))
+                n_asks = len(event.get("asks", []))
+                logger.debug(
+                    f"WS snapshot  token={tid[:16]}…  "
+                    f"bids={n_bids}  asks={n_asks}"
+                )
                 self._apply_snapshot(event)
             elif etype == "price_change":
                 self._apply_incremental(event)
             elif etype == "last_trade_price":
                 self._apply_last_trade(event)
-            # "tick_size_change" and others are silently ignored
+            else:
+                logger.debug(f"WS event type={etype!r} – ignored")
 
     # ── Event Handlers ─────────────────────────────────────────────────────────
 

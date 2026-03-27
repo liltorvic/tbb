@@ -94,6 +94,7 @@ class OrderManager:
         """
         state = self._market_for_token(book.token_id)
         if not state:
+            logger.debug(f"No market registered for token {book.token_id[:16]}…")
             return
 
         # Track price for volatility estimate
@@ -101,9 +102,18 @@ class OrderManager:
             state.price_history.append((time.time(), book.mid_price))
 
         # Rate-limit: don't re-quote more often than ORDER_REFRESH_INTERVAL
-        if time.time() - state.last_refresh < self.config.ORDER_REFRESH_INTERVAL:
+        elapsed = time.time() - state.last_refresh
+        if elapsed < self.config.ORDER_REFRESH_INTERVAL:
+            logger.debug(
+                f"[{state.label[:20]}] Rate-limited  "
+                f"({elapsed:.0f}s / {self.config.ORDER_REFRESH_INTERVAL:.0f}s)"
+            )
             return
 
+        logger.debug(
+            f"[{state.label[:20]}] Refreshing quotes  "
+            f"mid={book.mid_price}  spread_bps={book.spread_bps}"
+        )
         await self._refresh_quotes(state, book)
 
     # ── Core quoting logic ─────────────────────────────────────────────────────

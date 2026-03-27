@@ -10,6 +10,9 @@ websockets>=12.0
 # Synchronous HTTP (Gamma API + fallback REST calls)
 requests>=2.31.0
 
+# HTTP client (used for Gamma API position queries, also a py-clob-client dep)
+httpx>=0.27.0
+
 # Async HTTP (optional: swap out requests in future)
 aiohttp>=3.9.0
 

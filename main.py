@@ -285,6 +285,7 @@ class MarketMakingBot:
         logger.info("Bot shut down cleanly. Goodbye.")
 
     def request_stop(self):
+        self._running = False
         self._stop_event.set()
 
     # ── Helpers ────────────────────────────────────────────────────────────────

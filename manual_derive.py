@@ -64,10 +64,10 @@ try:
     resp = requests.get(url, headers=headers)
     resp.raise_for_status()
     data = resp.json()
-    print("\n✅ Success! API credentials:")
-    print(f"API_KEY        = {data.get('apiKey')}")
-    print(f"API_SECRET     = {data.get('secret')}")
-    print(f"API_PASSPHRASE = {data.get('passphrase')}")
+    print("\n✅ Success! Add these to your .env file:")
+    print(f"POLYMARKET_API_KEY={data.get('apiKey')}")
+    print(f"POLYMARKET_API_SECRET={data.get('secret')}")
+    print(f"POLYMARKET_API_PASSPHRASE={data.get('passphrase')}")
 except Exception as e:
     print(f"\n❌ Request failed: {e}")
     if hasattr(e, 'response') and e.response is not None:

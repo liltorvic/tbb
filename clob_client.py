@@ -171,8 +171,22 @@ class PolymarketClient:
         resp = self._clob.get_balance_allowance(
             params=BalanceAllowanceParams(asset_type=AssetType.COLLATERAL)
         )
-        raw = resp.get("balance", "0")
-        return float(raw) / 1_000_000   # USDC.e has 6 decimals
+        balance = float(resp.get("balance", "0")) / 1_000_000
+        allowance = float(resp.get("allowance", "0")) / 1_000_000
+        logger.info(f"Balance=${balance:.2f}  Allowance=${allowance:.2f}")
+        return balance
+
+    @retry_on_error()
+    def refresh_allowance(self):
+        """
+        Refresh the USDC allowance so the exchange can spend our full balance.
+        Must be called before trading if the allowance is low.
+        """
+        resp = self._clob.update_balance_allowance(
+            params=BalanceAllowanceParams(asset_type=AssetType.COLLATERAL)
+        )
+        logger.info(f"Allowance refreshed: {resp}")
+        return resp
 
     @retry_on_error()
     def get_open_orders(self) -> List[Dict]:

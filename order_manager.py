@@ -133,11 +133,21 @@ class OrderManager:
         bid_price = round(max(0.01, min(raw_bid, 0.98)), 4)
         ask_price = round(max(0.02, min(raw_ask, 0.99)), 4)
 
-        # Shares = desired USD notional / price
+        # Shares = desired USD notional / collateral cost per share.
+        # BUY  YES @ price P  →  costs P per share
+        # SELL YES @ price P  →  costs (1 - P) per share (you're buying NO)
+        #   unless we already hold YES shares (then it's free collateral).
         base_bid_sh = self.config.ORDER_SIZE_USD / bid_price
-        base_ask_sh = self.config.ORDER_SIZE_USD / ask_price
 
         yes_token = state.token_ids[0]
+        held_shares = self.risk.get_position(yes_token)
+        if held_shares > 0:
+            # We own shares — selling them costs nothing extra
+            base_ask_sh = self.config.ORDER_SIZE_USD / ask_price
+        else:
+            # No inventory — SELL requires (1 - price) collateral per share
+            sell_collateral = 1.0 - ask_price
+            base_ask_sh = self.config.ORDER_SIZE_USD / sell_collateral
 
         # Inventory skew
         bid_sh, ask_sh = self._inventory_skew(yes_token, base_bid_sh, base_ask_sh, mid)

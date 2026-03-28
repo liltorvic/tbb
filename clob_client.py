@@ -22,6 +22,7 @@ from py_clob_client.clob_types import (
     BalanceAllowanceParams,
     OrderArgs,
     OrderType,
+    TradeParams,
 )
 from py_clob_client.constants import POLYGON
 from py_clob_client.exceptions import PolyApiException
@@ -232,6 +233,31 @@ class PolymarketClient:
 
         logger.debug(f"Fetched {len(positions)} position(s) from Gamma API")
         return positions
+
+    # ── Trade History ─────────────────────────────────────────────────────────
+
+    @retry_on_error()
+    def get_trades(self, after: int = None, asset_id: str = None) -> List[Dict]:
+        """
+        Fetch recent trades (fills) for this account.
+        `after` is a Unix timestamp in seconds – only returns trades after that time.
+        Uses the SDK's built-in pagination to fetch all matching trades.
+        """
+        params = TradeParams()
+        if after is not None:
+            params.after = after
+        if asset_id is not None:
+            params.asset_id = asset_id
+        try:
+            return self._clob.get_trades(params=params) or []
+        except Exception as exc:
+            logger.error(f"get_trades failed: {exc}")
+            return []
+
+    @retry_on_error()
+    def get_order(self, order_id: str) -> Dict:
+        """Fetch a single order by ID (includes fill status)."""
+        return self._clob.get_order(order_id=order_id)
 
     # ── Order Actions ──────────────────────────────────────────────────────────
 

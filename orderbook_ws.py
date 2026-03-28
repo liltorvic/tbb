@@ -191,11 +191,17 @@ class OrderBookFeed:
         ) as ws:
             logger.info("WS connected. Subscribing…")
 
-            # Send one subscription message per token
-            for tid in self._token_ids:
-                sub = {"assets_ids": [tid], "type": "market"}
-                await ws.send(json.dumps(sub))
-                logger.debug(f"Subscribed: {tid[:16]}…")
+            # Subscribe to all tokens in a single message
+            sub = {
+                "auth": {},
+                "type": "subscribe",
+                "channel": "market",
+                "assets_ids": self._token_ids,
+            }
+            await ws.send(json.dumps(sub))
+            logger.info(
+                f"Subscribed to {len(self._token_ids)} token(s)"
+            )
 
             # Drain messages
             async for raw in ws:
@@ -206,8 +212,10 @@ class OrderBookFeed:
     async def _dispatch(self, raw: str):
         try:
             payload = json.loads(raw)
-        except json.JSONDecodeError:
-            logger.warning("WS received non-JSON message – ignoring")
+        except (json.JSONDecodeError, TypeError):
+            # Subscription acks and pings are often plain text – log once at debug
+            preview = str(raw)[:120] if raw else "(empty)"
+            logger.debug(f"WS non-JSON message: {preview}")
             return
 
         # The feed sends either a single dict or a list of events

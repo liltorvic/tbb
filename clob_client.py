@@ -191,9 +191,13 @@ class PolymarketClient:
             )
             return []
 
-        url = f"https://gamma-api.polymarket.com/positions?user={wallet}"
+        url = f"https://data-api.polymarket.com/positions?user={wallet}"
         try:
             resp = httpx.get(url, timeout=10)
+            if resp.status_code == 404:
+                # 404 = wallet has no positions – this is normal, not an error
+                logger.debug("No positions found for wallet (404) – normal for new/dry-run accounts")
+                return []
             resp.raise_for_status()
             data = resp.json()
         except httpx.HTTPStatusError as exc:

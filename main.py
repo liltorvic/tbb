@@ -75,29 +75,31 @@ class MarketMakingBot:
         self._banner()
 
         # 1. Verify connectivity and balances
-        try:
-            usdc = self.client.get_balance()
-            pol  = self.merger.pol_balance()
-            logger.info(f"Wallet balance  USDC=${usdc:.2f}  POL={pol:.4f}")
+        if self.config.API_KEY:
+            try:
+                usdc = self.client.get_balance()
+                pol  = self.merger.pol_balance()
+                logger.info(f"Wallet balance  USDC=${usdc:.2f}  POL={pol:.4f}")
 
-            if not self.config.DRY_RUN:
-                min_usdc = self.config.ORDER_SIZE_USD * 4  # at least 4 orders worth
-                if usdc < min_usdc:
-                    logger.error(
-                        f"Insufficient USDC for live trading "
-                        f"(have ${usdc:.2f}, need ≥${min_usdc:.2f})"
-                    )
-                    return False
-                if pol < self.config.MIN_POL_BALANCE:
-                    logger.warning(
-                        f"Low POL ({pol:.4f}) – position merging may fail. "
-                        f"Top up your wallet with at least {self.config.MIN_POL_BALANCE} POL."
-                    )
-        except Exception as exc:
-            logger.warning(
-                f"Balance check failed ({exc}) – proceeding "
-                f"(normal during first-time setup)"
-            )
+                if not self.config.DRY_RUN:
+                    min_usdc = self.config.ORDER_SIZE_USD * 4
+                    if usdc < min_usdc:
+                        logger.error(
+                            f"Insufficient USDC for live trading "
+                            f"(have ${usdc:.2f}, need ≥${min_usdc:.2f})"
+                        )
+                        return False
+                    if pol < self.config.MIN_POL_BALANCE:
+                        logger.warning(
+                            f"Low POL ({pol:.4f}) – position merging may fail. "
+                            f"Top up with at least {self.config.MIN_POL_BALANCE} POL."
+                        )
+            except Exception as exc:
+                logger.warning(
+                    f"Balance check failed ({exc}) – proceeding"
+                )
+        else:
+            logger.info("No API credentials – skipping balance check (normal for dry-run setup)")
 
         # 2. Sync existing positions from the API
         self.risk.refresh_from_api()
@@ -176,6 +178,8 @@ class MarketMakingBot:
         """Re-select markets periodically and hot-swap subscriptions."""
         while self._running:
             await self._interruptible_sleep(self.config.MARKET_REFRESH_INTERVAL)
+            if not self._running:
+                break
             logger.info("Market refresh triggered…")
             try:
                 new_markets = self.selector.select_markets(force=True)
@@ -187,6 +191,8 @@ class MarketMakingBot:
         """Poll risk state: stop-losses, daily limit, order sync."""
         while self._running:
             await self._interruptible_sleep(15)
+            if not self._running:
+                break
             try:
                 self.risk.maybe_reset_daily_pnl()
 
@@ -207,8 +213,9 @@ class MarketMakingBot:
                     self.risk.emergency_stop("Daily loss limit exceeded")
                     await self.order_mgr.cancel_all()
 
-                # Reconcile local order state against the API
-                self.order_mgr.sync_open_orders()
+                # Reconcile local order state against the API (needs API creds)
+                if self.config.API_KEY:
+                    self.order_mgr.sync_open_orders()
 
             except Exception as exc:
                 logger.error(f"risk_monitor_loop: {exc}")
@@ -217,6 +224,8 @@ class MarketMakingBot:
         """Run position merging once per MERGE_INTERVAL (default: 1 h)."""
         await self._interruptible_sleep(300)  # allow positions to build up first
         while self._running:
+            if not self._running:
+                break
             try:
                 logger.info("Merge cycle starting…")
                 self.merger.batch_merge_all(self.client, self.active_markets)
@@ -228,6 +237,8 @@ class MarketMakingBot:
         """Print a periodic status summary."""
         while self._running:
             await self._interruptible_sleep(60)
+            if not self._running:
+                break
             s = self.risk.summary()
             logger.info(
                 f"[STATS]  markets={len(self.active_markets)}  "

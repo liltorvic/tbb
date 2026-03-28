@@ -9,6 +9,7 @@ Scoring criteria (higher = better opportunity):
   5. Rewards      – liquidity mining programmes add free alpha
 """
 
+import json
 import logging
 import time
 from typing import Dict, List, Optional, Tuple
@@ -228,6 +229,13 @@ class MarketSelector:
         # Extract token IDs
         tokens_raw = m.get("tokens") or m.get("clobTokenIds") or []
         token_ids: List[str] = []
+
+        # Gamma API sometimes returns tokens as a JSON string – parse it
+        if isinstance(tokens_raw, str):
+            try:
+                tokens_raw = json.loads(tokens_raw)
+            except (json.JSONDecodeError, TypeError):
+                tokens_raw = []
 
         if tokens_raw and isinstance(tokens_raw[0], dict):
             # Gamma format: [{"token_id": "...", "outcome": "Yes"}, …]

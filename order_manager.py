@@ -321,6 +321,15 @@ class OrderManager:
                 return state
         return None
 
+    # ── Fill Handling ──────────────────────────────────────────────────────────
+
+    def remove_filled_order(self, order_id: str) -> Optional[TrackedOrder]:
+        """Remove a filled order from tracking and return it (or None)."""
+        for state in self.markets.values():
+            if order_id in state.orders:
+                return state.orders.pop(order_id)
+        return None
+
     # ── Maintenance ────────────────────────────────────────────────────────────
 
     async def cancel_all(self):

@@ -68,6 +68,8 @@ class MarketMakingBot:
         self._ws_feed: "OrderBookFeed | None" = None
         self._running = False
         self._stop_event = asyncio.Event()
+        self._seen_trade_ids: set = set()       # tracks already-processed fills
+        self._fill_poll_after: int = int(time.time())  # unix ts for trade polling
 
     # ── Startup ────────────────────────────────────────────────────────────────
 
@@ -141,6 +143,7 @@ class MarketMakingBot:
             asyncio.create_task(self._ws_feed.connect(),       name="ws_feed"),
             asyncio.create_task(self._market_refresh_loop(),   name="market_refresh"),
             asyncio.create_task(self._risk_monitor_loop(),     name="risk_monitor"),
+            asyncio.create_task(self._fill_monitor_loop(),     name="fill_monitor"),
             asyncio.create_task(self._merge_loop(),            name="merger"),
             asyncio.create_task(self._stats_loop(),            name="stats"),
             asyncio.create_task(self._stop_event.wait(),       name="stop_watcher"),
@@ -233,6 +236,84 @@ class MarketMakingBot:
                 logger.error(f"merge_loop: {exc}")
             await self._interruptible_sleep(self.config.MERGE_INTERVAL)
 
+    async def _fill_monitor_loop(self):
+        """Poll for new fills and update risk/P&L tracking."""
+        while self._running:
+            await self._interruptible_sleep(15)
+            if not self._running:
+                break
+            try:
+                loop = asyncio.get_running_loop()
+                trades = await loop.run_in_executor(
+                    None, lambda: self.client.get_trades(after=self._fill_poll_after)
+                )
+                if not trades:
+                    continue
+
+                new_count = 0
+                for trade in trades:
+                    trade_id = trade.get("id")
+                    if not trade_id or trade_id in self._seen_trade_ids:
+                        continue
+
+                    self._seen_trade_ids.add(trade_id)
+                    new_count += 1
+
+                    # Extract fill details
+                    side       = trade.get("side", "").upper()       # "BUY" / "SELL"
+                    token_id   = trade.get("asset_id", "")
+                    size       = float(trade.get("size", 0))
+                    price      = float(trade.get("price", 0))
+                    order_id   = trade.get("order_id", "")
+                    market     = trade.get("market", "")[:30]
+                    status     = trade.get("status", "")
+                    fee        = float(trade.get("fee", 0) or 0)
+                    match_time = trade.get("match_time") or trade.get("timestamp", "")
+
+                    # Determine our side from the trade (we could be maker or taker)
+                    # The `side` field in the trade is the side of the ORDER that matched
+                    trade_side = trade.get("trader_side") or side
+                    if not trade_side:
+                        # Fallback: look at the order we placed
+                        tracked = self.order_mgr.remove_filled_order(order_id)
+                        trade_side = tracked.side if tracked else side
+                    else:
+                        trade_side = trade_side.upper()
+                        self.order_mgr.remove_filled_order(order_id)
+
+                    if size <= 0 or price <= 0:
+                        continue
+
+                    # Record the fill in the risk manager
+                    self.risk.record_fill(token_id, trade_side, size, price)
+
+                    logger.info(
+                        f"FILL DETECTED  {trade_side:4s}  {size:7.2f} sh @ {price:.4f}  "
+                        f"[{market}]  fee=${fee:.4f}  id={trade_id[:16]}…"
+                    )
+
+                if new_count > 0:
+                    # Move the polling window forward to avoid re-fetching old trades
+                    latest_ts = self._fill_poll_after
+                    for trade in trades:
+                        if trade.get("id") not in self._seen_trade_ids:
+                            continue
+                        raw_ts = trade.get("match_time") or trade.get("timestamp") or trade.get("created_at") or 0
+                        ts = self._parse_trade_timestamp(raw_ts)
+                        if ts > latest_ts:
+                            latest_ts = ts
+                    self._fill_poll_after = latest_ts
+
+                    s = self.risk.summary()
+                    logger.info(
+                        f"[FILLS]  {new_count} new fill(s) processed  "
+                        f"daily_pnl=${s['daily_pnl_usd']:+.2f}  "
+                        f"unrealised=${s['unrealised_pnl_usd']:+.2f}"
+                    )
+
+            except Exception as exc:
+                logger.error(f"fill_monitor_loop: {exc}")
+
     async def _stats_loop(self):
         """Print a periodic status summary."""
         while self._running:
@@ -244,7 +325,9 @@ class MarketMakingBot:
                 f"[STATS]  markets={len(self.active_markets)}  "
                 f"positions={s['positions_held']}  "
                 f"daily_pnl=${s['daily_pnl_usd']:+.2f}  "
+                f"realised=${s['realised_pnl_usd']:+.2f}  "
                 f"unrealised=${s['unrealised_pnl_usd']:+.2f}  "
+                f"fills={len(self._seen_trade_ids)}  "
                 f"loss_room=${s['daily_loss_remaining']:.2f}  "
                 f"halt={s['emergency_stop']}"
             )
@@ -307,6 +390,26 @@ class MarketMakingBot:
             await asyncio.wait_for(self._stop_event.wait(), timeout=seconds)
         except asyncio.TimeoutError:
             pass
+
+    @staticmethod
+    def _parse_trade_timestamp(raw) -> int:
+        """Convert a trade timestamp (epoch int/str or ISO string) to epoch seconds."""
+        if not raw:
+            return 0
+        if isinstance(raw, (int, float)):
+            # If it looks like milliseconds (>year 2100 in seconds), convert
+            return int(raw) // 1000 if raw > 4_000_000_000 else int(raw)
+        if isinstance(raw, str):
+            try:
+                return int(raw)
+            except ValueError:
+                pass
+            try:
+                dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+                return int(dt.timestamp())
+            except (ValueError, TypeError):
+                return 0
+        return 0
 
     def _yes_token_ids(self):
         return [

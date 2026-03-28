@@ -64,6 +64,7 @@ class RiskManager:
         self.daily_pnl: float = 0.0
         self._day_start_ts: float = time.time()
         self._emergency_stop: bool = False
+        self._stale_warned: set = set()   # tokens warned once about missing price
 
     # ── Main Gate ──────────────────────────────────────────────────────────────
 
@@ -195,6 +196,15 @@ class RiskManager:
         triggered: List[str] = []
         for token_id, pos in self.positions.items():
             if pos.net_shares == 0 or pos.avg_cost == 0:
+                continue
+            # Skip positions with no live price — can't evaluate PnL without it
+            if pos.last_price == 0:
+                if token_id not in self._stale_warned:
+                    logger.info(
+                        f"Position {token_id[:14]} has no live price "
+                        f"(not in active markets) – skipping stop-loss check"
+                    )
+                    self._stale_warned.add(token_id)
                 continue
             if pos.net_shares > 0 and pos.pnl_pct < -self.config.STOP_LOSS_PCT:
                 logger.warning(

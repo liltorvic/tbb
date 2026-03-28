@@ -92,12 +92,16 @@ class PolymarketClient:
                 "Order placement will be unavailable until you run setup_credentials.py."
             )
 
+        # Use POLY_PROXY (1) if a proxy wallet is configured (email accounts),
+        # otherwise default to EOA (0) for MetaMask/direct wallet accounts.
+        sig_type = 1 if config.PROXY_WALLET else 0
+
         self._clob = ClobClient(
             host=config.CLOB_HOST,
             key=config.PRIVATE_KEY if config.PRIVATE_KEY else None,
             chain_id=POLYGON,
             creds=creds,
-            signature_type=0,           # EOA (Externally Owned Account)
+            signature_type=sig_type,
             funder=config.PROXY_WALLET if config.PROXY_WALLET else None,
         )
 

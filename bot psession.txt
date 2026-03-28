@@ -8354,3 +8354,141 @@
 2026-03-28 12:12:27  INFO      __main__              Bot shut down cleanly. Goodbye.
 (venv) ┌─[✗]─[spring@parrot]─[~/Documents/tbb]
 └──╼ $
+
+
+
+
+
+and now my history directly on POLYMARKET WEB
+ACTIVITY
+MARKET
+
+VALUE
+
+Time
+Sold
+Market icon
+US forces enter Iran by March 31?
+Yes 8¢
+29.7 shares
++$2.37
+1h ago
+Bought
+Market icon
+US forces enter Iran by March 31?
+Yes 8¢
+16.3 shares
+-$1.31
+1h ago
+Bought
+Market icon
+US forces enter Iran by March 31?
+Yes 8¢
+20.0 shares
+-$1.60
+1h ago
+Sold
+Market icon
+US forces enter Iran by March 31?
+Yes 8¢
+26.1 shares
++$2.09
+2h ago
+Bought
+Market icon
+US forces enter Iran by March 31?
+Yes 8¢
+19.9 shares
+-$1.59
+2h ago
+Bought
+Market icon
+US forces enter Iran by March 31?
+Yes 8¢
+25.2 shares
+-$2.02
+2h ago
+Sold
+Market icon
+US forces enter Iran by March 31?
+Yes 8¢
+26.1 shares
++$2.09
+2h ago
+Sold
+Market icon
+US forces enter Iran by March 31?
+Yes 8¢
+30.0 shares
++$2.40
+2h ago
+Bought
+Market icon
+US forces enter Iran by March 31?
+Yes 8¢
+20.5 shares
+-$1.64
+2h ago
+Bought
+Market icon
+Will Lars Løkke Rasmussen be the next prime minister of Denmark after the 2026 parliamentary elections?
+Yes 6¢
+2.0 shares
+-$0.11
+3h ago
+Bought
+Market icon
+US forces enter Iran by March 31?
+Yes 8¢
+18.8 shares
+-$1.50
+3h ago
+Bought
+Market icon
+US forces enter Iran by March 31?
+Yes 8¢
+19.4 shares
+-$1.55
+3h ago
+Sold
+Market icon
+US forces enter Iran by March 31?
+Yes 8¢
+29.1 shares
++$2.33
+3h ago
+
+
+
+
+
+-------------
+these are the trades I carried out myself;
+Claimed
+Market icon
+Bitcoin Up or Down - March 28, 3:50AM-3:55AM ET
++$1.23
+8h ago
+Bought
+Market icon
+Bitcoin Up or Down - March 28, 3:50AM-3:55AM ET
+Up 81¢
+1.2 shares
+-$1.00
+8h ago
+Bought
+Market icon
+US forces enter Iran by March 31?
+No 88¢
+1.1 shares
+-$1.00
+8h ago
+Sold
+Market icon
+US forces enter Iran by March 31?
+No 91¢
+1.1 shares
++$1.03
+5h ago
+
+the rest were my bot

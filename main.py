@@ -176,6 +176,8 @@ class MarketMakingBot:
         """Re-select markets periodically and hot-swap subscriptions."""
         while self._running:
             await self._interruptible_sleep(self.config.MARKET_REFRESH_INTERVAL)
+            if not self._running:
+                break
             logger.info("Market refresh triggered…")
             try:
                 new_markets = self.selector.select_markets(force=True)
@@ -187,6 +189,8 @@ class MarketMakingBot:
         """Poll risk state: stop-losses, daily limit, order sync."""
         while self._running:
             await self._interruptible_sleep(15)
+            if not self._running:
+                break
             try:
                 self.risk.maybe_reset_daily_pnl()
 
@@ -217,6 +221,8 @@ class MarketMakingBot:
         """Run position merging once per MERGE_INTERVAL (default: 1 h)."""
         await self._interruptible_sleep(300)  # allow positions to build up first
         while self._running:
+            if not self._running:
+                break
             try:
                 logger.info("Merge cycle starting…")
                 self.merger.batch_merge_all(self.client, self.active_markets)
@@ -228,6 +234,8 @@ class MarketMakingBot:
         """Print a periodic status summary."""
         while self._running:
             await self._interruptible_sleep(60)
+            if not self._running:
+                break
             s = self.risk.summary()
             logger.info(
                 f"[STATS]  markets={len(self.active_markets)}  "

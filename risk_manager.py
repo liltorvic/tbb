@@ -120,36 +120,37 @@ class RiskManager:
         price: float,
     ):
         """
-        Update position when an order is confirmed filled.
-        Call this from a trade-event handler or polling loop.
+        Record a fill for P&L tracking.
+
+        Position state (net_shares, avg_cost) is managed by refresh_from_api()
+        which pulls canonical data from the Polymarket API every 15 s.
+        This method only computes realised P&L and updates daily totals
+        so there is no race between the two.
         """
         if token_id not in self.positions:
             self.positions[token_id] = Position(token_id=token_id)
         pos = self.positions[token_id]
 
         if side == "BUY":
-            total_cost = pos.net_shares * pos.avg_cost + size * price
-            pos.net_shares += size
-            pos.avg_cost = total_cost / pos.net_shares if pos.net_shares else price
-            pos.peak_price = max(pos.peak_price, price)
+            logger.info(
+                f"Fill BUY   {size:.2f}sh @ {price:.4f}  "
+                f"[{token_id[:14]}]"
+            )
         elif side == "SELL":
-            if pos.net_shares > 0:
-                realised = size * (price - pos.avg_cost)
-                pos.realized_pnl += realised
-                self.daily_pnl += realised
-                logger.info(
-                    f"Fill SELL  {size:.2f}sh @ {price:.4f}  "
-                    f"realised_pnl=${realised:+.2f}  "
-                    f"daily_pnl=${self.daily_pnl:+.2f}"
-                )
-            pos.net_shares -= size
+            # Use the stored avg_cost (set by refresh_from_api) for P&L calc.
+            # avg_cost reflects the entry price *before* this sell reduces shares.
+            avg = pos.avg_cost if pos.avg_cost > 0 else price
+            realised = size * (price - avg)
+            pos.realized_pnl += realised
+            self.daily_pnl += realised
+            logger.info(
+                f"Fill SELL  {size:.2f}sh @ {price:.4f}  "
+                f"avg_cost={avg:.4f}  "
+                f"realised_pnl=${realised:+.2f}  "
+                f"daily_pnl=${self.daily_pnl:+.2f}"
+            )
 
         pos.last_price = price
-        logger.debug(
-            f"Position [{token_id[:12]}]  "
-            f"net={pos.net_shares:.2f}  avg={pos.avg_cost:.4f}  "
-            f"unrealised=${pos.unrealized_pnl:+.2f}"
-        )
 
     def update_mark_prices(self, prices: Dict[str, float]):
         """Push live mid-prices into all held positions for P&L marking."""

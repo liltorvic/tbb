@@ -129,6 +129,20 @@ class MarketMakingBot:
         # Collect YES-token IDs for the WebSocket subscription
         token_ids = self._yes_token_ids()
 
+        # Verify token IDs by fetching one order book via REST
+        if token_ids:
+            test_tid = token_ids[0]
+            logger.info(f"Verifying token ID via REST: {test_tid}")
+            try:
+                book = self.client.get_orderbook(test_tid)
+                bids = book.get("bids", [])
+                asks = book.get("asks", [])
+                logger.info(
+                    f"REST orderbook OK: {len(bids)} bids, {len(asks)} asks"
+                )
+            except Exception as exc:
+                logger.warning(f"REST orderbook check failed: {exc}")
+
         self._ws_feed = OrderBookFeed(
             token_ids=token_ids,
             on_update=self._on_book_update,

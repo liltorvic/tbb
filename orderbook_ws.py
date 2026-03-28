@@ -198,9 +198,10 @@ class OrderBookFeed:
                 "channel": "market",
                 "assets_ids": self._token_ids,
             }
+            logger.info(f"Subscribing with: {json.dumps(sub)[:500]}")
             await ws.send(json.dumps(sub))
             logger.info(
-                f"Subscription sent for {len(self._token_ids)} token(s)"
+                f"Token IDs: {[tid[:20] + '…' for tid in self._token_ids]}"
             )
 
             # Drain messages

@@ -75,29 +75,31 @@ class MarketMakingBot:
         self._banner()
 
         # 1. Verify connectivity and balances
-        try:
-            usdc = self.client.get_balance()
-            pol  = self.merger.pol_balance()
-            logger.info(f"Wallet balance  USDC=${usdc:.2f}  POL={pol:.4f}")
+        if self.config.API_KEY:
+            try:
+                usdc = self.client.get_balance()
+                pol  = self.merger.pol_balance()
+                logger.info(f"Wallet balance  USDC=${usdc:.2f}  POL={pol:.4f}")
 
-            if not self.config.DRY_RUN:
-                min_usdc = self.config.ORDER_SIZE_USD * 4  # at least 4 orders worth
-                if usdc < min_usdc:
-                    logger.error(
-                        f"Insufficient USDC for live trading "
-                        f"(have ${usdc:.2f}, need ≥${min_usdc:.2f})"
-                    )
-                    return False
-                if pol < self.config.MIN_POL_BALANCE:
-                    logger.warning(
-                        f"Low POL ({pol:.4f}) – position merging may fail. "
-                        f"Top up your wallet with at least {self.config.MIN_POL_BALANCE} POL."
-                    )
-        except Exception as exc:
-            logger.warning(
-                f"Balance check failed ({exc}) – proceeding "
-                f"(normal during first-time setup)"
-            )
+                if not self.config.DRY_RUN:
+                    min_usdc = self.config.ORDER_SIZE_USD * 4
+                    if usdc < min_usdc:
+                        logger.error(
+                            f"Insufficient USDC for live trading "
+                            f"(have ${usdc:.2f}, need ≥${min_usdc:.2f})"
+                        )
+                        return False
+                    if pol < self.config.MIN_POL_BALANCE:
+                        logger.warning(
+                            f"Low POL ({pol:.4f}) – position merging may fail. "
+                            f"Top up with at least {self.config.MIN_POL_BALANCE} POL."
+                        )
+            except Exception as exc:
+                logger.warning(
+                    f"Balance check failed ({exc}) – proceeding"
+                )
+        else:
+            logger.info("No API credentials – skipping balance check (normal for dry-run setup)")
 
         # 2. Sync existing positions from the API
         self.risk.refresh_from_api()
@@ -128,20 +130,6 @@ class MarketMakingBot:
 
         # Collect YES-token IDs for the WebSocket subscription
         token_ids = self._yes_token_ids()
-
-        # Verify token IDs by fetching one order book via REST
-        if token_ids:
-            test_tid = token_ids[0]
-            logger.info(f"Verifying token ID via REST: {test_tid}")
-            try:
-                book = self.client.get_orderbook(test_tid)
-                bids = book.get("bids", [])
-                asks = book.get("asks", [])
-                logger.info(
-                    f"REST orderbook OK: {len(bids)} bids, {len(asks)} asks"
-                )
-            except Exception as exc:
-                logger.warning(f"REST orderbook check failed: {exc}")
 
         self._ws_feed = OrderBookFeed(
             token_ids=token_ids,
@@ -225,8 +213,9 @@ class MarketMakingBot:
                     self.risk.emergency_stop("Daily loss limit exceeded")
                     await self.order_mgr.cancel_all()
 
-                # Reconcile local order state against the API
-                self.order_mgr.sync_open_orders()
+                # Reconcile local order state against the API (needs API creds)
+                if self.config.API_KEY:
+                    self.order_mgr.sync_open_orders()
 
             except Exception as exc:
                 logger.error(f"risk_monitor_loop: {exc}")

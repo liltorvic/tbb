@@ -198,21 +198,15 @@ class OrderBookFeed:
                 "channel": "market",
                 "assets_ids": self._token_ids,
             }
-            logger.info(f"Subscribing with: {json.dumps(sub)[:500]}")
             await ws.send(json.dumps(sub))
             logger.info(
-                f"Token IDs: {[tid[:20] + '…' for tid in self._token_ids]}"
+                f"Subscribed to {len(self._token_ids)} token(s)"
             )
 
             # Drain messages
-            msg_count = 0
             async for raw in ws:
                 if not self._running:
                     break
-                msg_count += 1
-                if msg_count <= 10:
-                    preview = str(raw)[:150] if raw else "(empty)"
-                    logger.info(f"WS msg #{msg_count}: {preview}")
                 await self._dispatch(raw)
 
     async def _dispatch(self, raw: str):

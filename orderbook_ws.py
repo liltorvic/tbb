@@ -191,11 +191,17 @@ class OrderBookFeed:
         ) as ws:
             logger.info("WS connected. Subscribing…")
 
-            # Send one subscription message per token
-            for tid in self._token_ids:
-                sub = {"assets_ids": [tid], "type": "market"}
-                await ws.send(json.dumps(sub))
-                logger.info(f"Subscribed to token: {tid[:20]}…")
+            # Subscribe to all tokens in a single message
+            sub = {
+                "auth": {},
+                "type": "subscribe",
+                "channel": "market",
+                "assets_ids": self._token_ids,
+            }
+            await ws.send(json.dumps(sub))
+            logger.info(
+                f"Subscription sent for {len(self._token_ids)} token(s)"
+            )
 
             # Drain messages
             msg_count = 0

@@ -50,11 +50,15 @@ signer = Signer(pk, POLYGON)
 signature = sign_clob_auth_message(signer, timestamp, nonce)
 
 headers = {
-    "POLY_ADDRESS": proxy,          # <-- critical: use proxy address
+    "POLY_ADDRESS": signer.address(),  # must be the EOA address (from private key)
     "POLY_SIGNATURE": signature,
     "POLY_TIMESTAMP": str(timestamp),
     "POLY_NONCE": str(nonce),
-    "Accept": "application/json, text/plain, */*",
+    "User-Agent": "py_clob_client",
+    "Accept": "*/*",
+    "Connection": "keep-alive",
+    "Content-Type": "application/json",
+    "Accept-Encoding": "gzip",
 }
 
 # ---- 4. Send the request to derive API key ----

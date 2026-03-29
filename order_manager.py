@@ -159,6 +159,12 @@ class OrderManager:
         # Cancel anything too far from our new targets
         await self._cancel_stale(state, bid_price, ask_price)
 
+        # Refresh CLOB's cached allowance before placing orders
+        try:
+            self.client.refresh_allowance()
+        except Exception:
+            pass
+
         # Place bid
         if can_buy and bid_sh >= 0.01:
             if not self._order_exists(state, "BUY", bid_price):

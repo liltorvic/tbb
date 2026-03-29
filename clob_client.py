@@ -185,7 +185,7 @@ class PolymarketClient:
         resp = self._clob.update_balance_allowance(
             params=BalanceAllowanceParams(asset_type=AssetType.COLLATERAL)
         )
-        logger.info(f"Allowance refreshed: {resp}")
+        logger.debug(f"Allowance refreshed: {resp}")
         return resp
 
     @retry_on_error()

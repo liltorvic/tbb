@@ -159,7 +159,7 @@ class OrderManager:
         # Cancel anything too far from our new targets
         await self._cancel_stale(state, bid_price, ask_price)
 
-        # Place bid
+        # Place bid (always allowed — uses regular exchange path)
         if can_buy and bid_sh >= 0.01:
             if not self._order_exists(state, "BUY", bid_price):
                 resp = self.client.place_limit_order(
@@ -171,9 +171,14 @@ class OrderManager:
                 )
                 self._track_order(resp, yes_token, "BUY", bid_price, round(bid_sh, 2), state)
 
-        # Place ask
-        if can_sell and ask_sh >= 0.01:
-            if not self._order_exists(state, "SELL", ask_price):
+        # Place ask — only when we hold shares to sell.
+        # Naked SELLs (selling shares we don't own) fail on neg-risk markets
+        # because the proxy wallet isn't set up for the neg-risk exchange path.
+        # Instead we buy first, then sell inventory at the ask for spread capture.
+        if can_sell and ask_sh >= 0.01 and held_shares > 0:
+            # Cap sell size to shares we actually own
+            ask_sh = min(ask_sh, held_shares)
+            if ask_sh >= 0.01 and not self._order_exists(state, "SELL", ask_price):
                 resp = self.client.place_limit_order(
                     token_id=yes_token,
                     side="SELL",
@@ -182,6 +187,11 @@ class OrderManager:
                     market_label=state.label,
                 )
                 self._track_order(resp, yes_token, "SELL", ask_price, round(ask_sh, 2), state)
+        elif can_sell and held_shares <= 0:
+            logger.debug(
+                f"[{state.label[:30]}] Skipping SELL – no inventory "
+                f"(need shares from BUY fills first)"
+            )
 
         state.last_refresh = time.time()
         state.quote_count += 1

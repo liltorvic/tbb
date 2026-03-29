@@ -84,12 +84,6 @@ class MarketMakingBot:
                 logger.info(f"Wallet balance  USDC=${usdc:.2f}  POL={pol:.4f}")
 
                 if not self.config.DRY_RUN:
-                    # Refresh USDC allowance so the exchange can spend our full balance
-                    try:
-                        self.client.refresh_allowance()
-                    except Exception as exc:
-                        logger.warning(f"Allowance refresh failed: {exc}")
-
                     min_usdc = self.config.ORDER_SIZE_USD * 4
                     if usdc < min_usdc:
                         logger.error(

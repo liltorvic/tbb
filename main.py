@@ -84,15 +84,6 @@ class MarketMakingBot:
                 logger.info(f"Wallet balance  USDC=${usdc:.2f}  POL={pol:.4f}")
 
                 if not self.config.DRY_RUN:
-                    # Refresh CLOB server's cached allowance FIRST, then re-check
-                    try:
-                        self.client.refresh_allowance()
-                        import time as _t; _t.sleep(2)
-                        usdc = self.client.get_balance()
-                        logger.info(f"Post-refresh balance  USDC=${usdc:.2f}")
-                    except Exception as exc:
-                        logger.warning(f"Allowance refresh failed: {exc}")
-
                     min_usdc = self.config.ORDER_SIZE_USD * 4
                     if usdc < min_usdc:
                         logger.error(

@@ -68,6 +68,9 @@ class Config:
         os.getenv("SELECTION_MAX_REASONABLE_SPREAD", "0.08")
     )
     SELECTION_MAX_ORDERCOUNT: int = int(os.getenv("SELECTION_MAX_ORDERCOUNT", "1200"))
+    SELECTION_BOOK_CACHE_TTL_SECONDS: float = float(
+        os.getenv("SELECTION_BOOK_CACHE_TTL_SECONDS", "60")
+    )
 
     # ── Spread Parameters ──────────────────────────────────────────────────────
     # All in basis points (1 bps = 0.01%).  1 bps = 0.0001 in decimal.

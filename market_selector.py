@@ -30,6 +30,10 @@ class MarketSelector:
         self.config = config
         self._last_selected: List[Dict] = []
         self._last_run: float = 0.0
+        self._book_cache: Dict[str, Dict[str, Any]] = {}
+        self._book_cache_ttl: float = float(
+            getattr(self.config, "SELECTION_BOOK_CACHE_TTL_SECONDS", 60.0)
+        )
 
     # ── Public ───────────────────────────────────────────────────────────────
 
@@ -79,7 +83,7 @@ class MarketSelector:
 
         final_ranked: List[Dict] = []
         for _, market, coarse_meta in shortlist:
-            book_meta = self._fetch_yes_book_metrics(market)
+            book_meta = self._get_yes_book_metrics_cached(market)
             if not book_meta or not book_meta.get("tradable"):
                 continue
 
@@ -258,8 +262,26 @@ class MarketSelector:
 
     # ── Stage 2: live order-book enrichment ─────────────────────────────────
 
-    def _fetch_yes_book_metrics(self, market: Dict) -> Optional[Dict[str, Any]]:
+    def _get_yes_book_metrics_cached(self, market: Dict) -> Optional[Dict[str, Any]]:
         yes_token = self._extract_yes_token_id(market)
+        if not yes_token:
+            return None
+
+        now = time.time()
+        cached = self._book_cache.get(yes_token)
+        if cached and now - cached["timestamp"] < self._book_cache_ttl:
+            return cached["data"]
+
+        data = self._fetch_yes_book_metrics(market, yes_token=yes_token)
+        self._book_cache[yes_token] = {"timestamp": now, "data": data}
+        return data
+
+    def _fetch_yes_book_metrics(
+        self,
+        market: Dict,
+        yes_token: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
+        yes_token = yes_token or self._extract_yes_token_id(market)
         if not yes_token:
             return None
 

@@ -293,6 +293,8 @@ class MarketSelector:
 
         bids = self._parse_book_levels(self._book_side(raw_book, "bids"))
         asks = self._parse_book_levels(self._book_side(raw_book, "asks"))
+        bids.sort(key=lambda x: x[0], reverse=True)
+        asks.sort(key=lambda x: x[0])
 
         if not bids or not asks:
             return {"tradable": False, "yes_token": yes_token}
@@ -479,7 +481,6 @@ class MarketSelector:
             if price > 0 and size > 0:
                 parsed.append((price, size))
 
-        parsed.sort(key=lambda x: x[0], reverse=True)
         return parsed
 
     def _depth_within_bps(

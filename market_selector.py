@@ -360,6 +360,10 @@ class MarketSelector:
         book_meta: Dict[str, Any],
     ) -> Tuple[float, str, Dict[str, float]]:
         spread_pct = book_meta["spread_pct"]
+        hard_max_spread = float(getattr(self.config, "SELECTION_HARD_MAX_SPREAD_PCT", 0.35))
+        if spread_pct > hard_max_spread:
+            return 0.0, f"spread_too_wide({spread_pct:.2%})", {}
+
         target_quote_spread = self.config.TARGET_SPREAD_BPS / 10_000.0
         min_enter_spread = float(self.config.MIN_SPREAD_TO_ENTER)
 
@@ -373,6 +377,10 @@ class MarketSelector:
 
         target_depth_mult = float(getattr(self.config, "SELECTION_TARGET_DEPTH_MULTIPLIER", 3.0))
         depth_capacity = min(book_meta["bid_depth_window"], book_meta["ask_depth_window"])
+        min_depth_shares = float(getattr(self.config, "SELECTION_MIN_DEPTH_SHARES", 1.0))
+        if depth_capacity < min_depth_shares:
+            return 0.0, f"depth_too_thin({depth_capacity:.2f}sh)", {}
+
         depth_score = self._clamp(
             depth_capacity / max(book_meta["target_shares"] * target_depth_mult, 1e-6)
         )

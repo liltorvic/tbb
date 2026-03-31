@@ -71,6 +71,13 @@ class Config:
     SELECTION_BOOK_CACHE_TTL_SECONDS: float = float(
         os.getenv("SELECTION_BOOK_CACHE_TTL_SECONDS", "60")
     )
+    # Soft guardrails (penalties, not hard rejects)
+    SELECTION_SOFT_MAX_SPREAD_PCT: float = float(
+        os.getenv("SELECTION_SOFT_MAX_SPREAD_PCT", "0.35")
+    )
+    SELECTION_SOFT_MIN_DEPTH_SHARES: float = float(
+        os.getenv("SELECTION_SOFT_MIN_DEPTH_SHARES", "1.0")
+    )
     # ── Spread Parameters ──────────────────────────────────────────────────────
     # All in basis points (1 bps = 0.01%).  1 bps = 0.0001 in decimal.
     # Absolute minimum spread we will ever quote

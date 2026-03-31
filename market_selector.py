@@ -387,7 +387,21 @@ class MarketSelector:
         suspicious_wide_penalty = 0.10 if spread_pct > 0.10 else 0.0
         toxicity_penalty = imbalance_penalty + last_trade_gap_penalty + suspicious_wide_penalty
 
-        net_edge_score = max(0.0, edge_score - toxicity_penalty)
+        # Soft guardrails to discourage pathological markets without eliminating all candidates.
+        soft_max_spread = float(getattr(self.config, "SELECTION_SOFT_MAX_SPREAD_PCT", 0.35))
+        soft_min_depth = float(getattr(self.config, "SELECTION_SOFT_MIN_DEPTH_SHARES", 1.0))
+
+        spread_guard_penalty = 0.0
+        if soft_max_spread > 0 and spread_pct > soft_max_spread:
+            spread_guard_penalty = min((spread_pct - soft_max_spread) / soft_max_spread, 1.0) * 0.30
+
+        depth_guard_penalty = 0.0
+        if soft_min_depth > 0 and depth_capacity < soft_min_depth:
+            depth_guard_penalty = min((soft_min_depth - depth_capacity) / soft_min_depth, 1.0) * 0.30
+
+        guard_penalty = spread_guard_penalty + depth_guard_penalty
+
+        net_edge_score = max(0.0, edge_score - toxicity_penalty - guard_penalty)
         liquidity_score = 0.50 * coarse_meta["vol_score"] + 0.50 * depth_score
 
         final_score = 100.0 * (
@@ -410,6 +424,8 @@ class MarketSelector:
             "lifecycle_score": round(coarse_meta["lifecycle_score"], 4),
             "reward_score": round(coarse_meta["reward_score"], 4),
             "toxicity_penalty": round(toxicity_penalty, 4),
+            "spread_guard_penalty": round(spread_guard_penalty, 4),
+            "depth_guard_penalty": round(depth_guard_penalty, 4),
         }
 
         reason = " | ".join(

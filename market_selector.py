@@ -313,12 +313,25 @@ class MarketSelector:
 
         depth_bps = float(getattr(self.config, "SELECTION_DEPTH_BPS", 15.0))
         competition_bps = float(getattr(self.config, "SELECTION_COMPETITION_BPS", 12.0))
+        half_spread_bps = (spread_pct * 10_000.0) / 2.0
+        adaptive_depth_bps = min(
+            max(depth_bps, half_spread_bps + 1.0),
+            float(getattr(self.config, "SELECTION_MAX_ADAPTIVE_DEPTH_BPS", 400.0)),
+        )
+        adaptive_competition_bps = min(
+            max(competition_bps, half_spread_bps + 1.0),
+            float(getattr(self.config, "SELECTION_MAX_ADAPTIVE_COMPETITION_BPS", 400.0)),
+        )
 
-        bid_depth_window = self._depth_within_bps(bids, mid, "bid", depth_bps)
-        ask_depth_window = self._depth_within_bps(asks, mid, "ask", depth_bps)
+        bid_depth_window = self._depth_within_bps(bids, mid, "bid", adaptive_depth_bps)
+        ask_depth_window = self._depth_within_bps(asks, mid, "ask", adaptive_depth_bps)
 
-        near_touch_bid_levels = self._levels_within_bps(bids, mid, "bid", competition_bps)
-        near_touch_ask_levels = self._levels_within_bps(asks, mid, "ask", competition_bps)
+        near_touch_bid_levels = self._levels_within_bps(
+            bids, mid, "bid", adaptive_competition_bps
+        )
+        near_touch_ask_levels = self._levels_within_bps(
+            asks, mid, "ask", adaptive_competition_bps
+        )
         near_touch_levels = near_touch_bid_levels + near_touch_ask_levels
 
         bid_depth_5 = sum(size for _, size in bids[:5])
@@ -347,6 +360,8 @@ class MarketSelector:
             "bid_depth_5": bid_depth_5,
             "ask_depth_5": ask_depth_5,
             "depth_imbalance": depth_imbalance,
+            "adaptive_depth_bps": adaptive_depth_bps,
+            "adaptive_competition_bps": adaptive_competition_bps,
             "near_touch_bid_levels": near_touch_bid_levels,
             "near_touch_ask_levels": near_touch_ask_levels,
             "near_touch_levels": near_touch_levels,
@@ -378,7 +393,12 @@ class MarketSelector:
         )
 
         max_comp_levels = float(getattr(self.config, "SELECTION_MAX_COMPETITION_LEVELS", 12.0))
-        local_competition_score = 1.0 - self._clamp(book_meta["near_touch_levels"] / max_comp_levels)
+        if depth_capacity <= 0:
+            local_competition_score = 0.0
+        else:
+            local_competition_score = 1.0 - self._clamp(
+                book_meta["near_touch_levels"] / max_comp_levels
+            )
 
         fill_quality_score = 0.65 * depth_score + 0.35 * local_competition_score
 
@@ -696,6 +716,10 @@ class MarketSelector:
                     "bid_depth_5": round(book_meta["bid_depth_5"], 3),
                     "ask_depth_5": round(book_meta["ask_depth_5"], 3),
                     "depth_imbalance": round(book_meta["depth_imbalance"], 4),
+                    "adaptive_depth_bps": round(book_meta["adaptive_depth_bps"], 2),
+                    "adaptive_competition_bps": round(
+                        book_meta["adaptive_competition_bps"], 2
+                    ),
                     "near_touch_levels": int(book_meta["near_touch_levels"]),
                     "last_trade_gap_pct": round(book_meta["last_trade_gap_pct"], 6),
                 },

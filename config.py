@@ -71,6 +71,12 @@ class Config:
     SELECTION_BOOK_CACHE_TTL_SECONDS: float = float(
         os.getenv("SELECTION_BOOK_CACHE_TTL_SECONDS", "60")
     )
+    SELECTION_MAX_ADAPTIVE_DEPTH_BPS: float = float(
+        os.getenv("SELECTION_MAX_ADAPTIVE_DEPTH_BPS", "400")
+    )
+    SELECTION_MAX_ADAPTIVE_COMPETITION_BPS: float = float(
+        os.getenv("SELECTION_MAX_ADAPTIVE_COMPETITION_BPS", "400")
+    )
     # Soft guardrails (penalties, not hard rejects)
     SELECTION_SOFT_MAX_SPREAD_PCT: float = float(
         os.getenv("SELECTION_SOFT_MAX_SPREAD_PCT", "0.35")

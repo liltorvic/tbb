@@ -12,6 +12,7 @@ Keeps compatibility with the existing bot contract:
 import json
 import logging
 import math
+import os
 import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
@@ -32,7 +33,7 @@ class MarketSelector:
         self._last_run: float = 0.0
         self._book_cache: Dict[str, Dict[str, Any]] = {}
         self._book_cache_ttl: float = float(
-            getattr(self.config, "SELECTION_BOOK_CACHE_TTL_SECONDS", 60.0)
+            self._cfg_float("SELECTION_BOOK_CACHE_TTL_SECONDS", 60.0)
         )
 
     # ── Public ───────────────────────────────────────────────────────────────
@@ -68,16 +69,12 @@ class MarketSelector:
 
         coarse_ranked.sort(key=lambda x: x[0], reverse=True)
 
+        shortlist_size_cfg = self._cfg_int("SELECTION_SHORTLIST_SIZE", 0)
         shortlist_size = max(
             self.config.MAX_MARKETS,
-            int(
-                getattr(
-                    self.config,
-                    "SELECTION_SHORTLIST_SIZE",
-                    self.config.MAX_MARKETS
-                    * getattr(self.config, "SELECTION_SHORTLIST_MULTIPLIER", 4),
-                )
-            ),
+            shortlist_size_cfg
+            if shortlist_size_cfg > 0
+            else self.config.MAX_MARKETS * self._cfg_int("SELECTION_SHORTLIST_MULTIPLIER", 4),
         )
         shortlist = coarse_ranked[:shortlist_size]
 
@@ -224,13 +221,13 @@ class MarketSelector:
 
         order_count = int(market.get("orderCount") or 0)
         competition_score = 1.0 - self._clamp(
-            order_count / float(getattr(self.config, "SELECTION_MAX_ORDERCOUNT", 1200))
+            order_count / self._cfg_float("SELECTION_MAX_ORDERCOUNT", 1200.0)
         )
 
         time_to_resolution_s = self._time_to_resolution_seconds(market)
         lifecycle_score = self._lifecycle_score(time_to_resolution_s)
 
-        min_ttr = int(getattr(self.config, "SELECTION_MIN_TIME_TO_RESOLUTION_SECONDS", 3600))
+        min_ttr = self._cfg_int("SELECTION_MIN_TIME_TO_RESOLUTION_SECONDS", 3600)
         if time_to_resolution_s is not None and time_to_resolution_s < min_ttr:
             return 0.0, {"reject_reason": f"resolves_too_soon({time_to_resolution_s:.0f}s)"}
 
@@ -311,16 +308,16 @@ class MarketSelector:
         target_order_usd = float(self.config.ORDER_SIZE_USD)
         target_shares = max(target_order_usd / max(mid, 0.05), 1.0)
 
-        depth_bps = float(getattr(self.config, "SELECTION_DEPTH_BPS", 15.0))
-        competition_bps = float(getattr(self.config, "SELECTION_COMPETITION_BPS", 12.0))
+        depth_bps = self._cfg_float("SELECTION_DEPTH_BPS", 15.0)
+        competition_bps = self._cfg_float("SELECTION_COMPETITION_BPS", 12.0)
         half_spread_bps = (spread_pct * 10_000.0) / 2.0
         adaptive_depth_bps = min(
             max(depth_bps, half_spread_bps + 1.0),
-            float(getattr(self.config, "SELECTION_MAX_ADAPTIVE_DEPTH_BPS", 400.0)),
+            self._cfg_float("SELECTION_MAX_ADAPTIVE_DEPTH_BPS", 400.0),
         )
         adaptive_competition_bps = min(
             max(competition_bps, half_spread_bps + 1.0),
-            float(getattr(self.config, "SELECTION_MAX_ADAPTIVE_COMPETITION_BPS", 400.0)),
+            self._cfg_float("SELECTION_MAX_ADAPTIVE_COMPETITION_BPS", 400.0),
         )
 
         bid_depth_window = self._depth_within_bps(bids, mid, "bid", adaptive_depth_bps)
@@ -382,17 +379,20 @@ class MarketSelector:
         headroom = spread_pct - max(target_quote_spread, min_enter_spread * 0.75)
         headroom_score = self._clamp(
             (headroom + 0.01)
-            / float(getattr(self.config, "SELECTION_MAX_REASONABLE_SPREAD", 0.08))
+            / self._cfg_float("SELECTION_MAX_REASONABLE_SPREAD", 0.08)
         )
         edge_score = 0.55 * spread_score + 0.45 * headroom_score
+        max_reasonable_spread = self._cfg_float("SELECTION_MAX_REASONABLE_SPREAD", 0.08)
+        if spread_pct > max_reasonable_spread and spread_pct > 0:
+            edge_score *= max(0.10, max_reasonable_spread / spread_pct)
 
-        target_depth_mult = float(getattr(self.config, "SELECTION_TARGET_DEPTH_MULTIPLIER", 3.0))
+        target_depth_mult = self._cfg_float("SELECTION_TARGET_DEPTH_MULTIPLIER", 3.0)
         depth_capacity = min(book_meta["bid_depth_window"], book_meta["ask_depth_window"])
         depth_score = self._clamp(
             depth_capacity / max(book_meta["target_shares"] * target_depth_mult, 1e-6)
         )
 
-        max_comp_levels = float(getattr(self.config, "SELECTION_MAX_COMPETITION_LEVELS", 12.0))
+        max_comp_levels = self._cfg_float("SELECTION_MAX_COMPETITION_LEVELS", 12.0)
         if depth_capacity <= 0:
             local_competition_score = 0.0
         else:
@@ -401,6 +401,8 @@ class MarketSelector:
             )
 
         fill_quality_score = 0.65 * depth_score + 0.35 * local_competition_score
+        if depth_capacity <= 0:
+            fill_quality_score *= 0.20
 
         imbalance_penalty = min(abs(book_meta["depth_imbalance"]), 1.0) * 0.10
         last_trade_gap_penalty = min(book_meta["last_trade_gap_pct"] / 0.02, 1.0) * 0.15
@@ -408,8 +410,8 @@ class MarketSelector:
         toxicity_penalty = imbalance_penalty + last_trade_gap_penalty + suspicious_wide_penalty
 
         # Soft guardrails to discourage pathological markets without eliminating all candidates.
-        soft_max_spread = float(getattr(self.config, "SELECTION_SOFT_MAX_SPREAD_PCT", 0.35))
-        soft_min_depth = float(getattr(self.config, "SELECTION_SOFT_MIN_DEPTH_SHARES", 1.0))
+        soft_max_spread = self._cfg_float("SELECTION_SOFT_MAX_SPREAD_PCT", 0.35)
+        soft_min_depth = self._cfg_float("SELECTION_SOFT_MIN_DEPTH_SHARES", 1.0)
 
         spread_guard_penalty = 0.0
         if soft_max_spread > 0 and spread_pct > soft_max_spread:
@@ -576,7 +578,7 @@ class MarketSelector:
             return 0.0
 
         floor = float(self.config.MIN_SPREAD_TO_ENTER) * 0.5
-        ceiling = float(getattr(self.config, "SELECTION_MAX_REASONABLE_SPREAD", 0.08))
+        ceiling = self._cfg_float("SELECTION_MAX_REASONABLE_SPREAD", 0.08)
         return self._clamp((spread_pct - floor) / max(ceiling - floor, 1e-6))
 
     def _lifecycle_score(self, time_to_resolution_s: Optional[float]) -> float:
@@ -644,6 +646,21 @@ class MarketSelector:
             return float(value)
         except (TypeError, ValueError):
             return 0.0
+
+    def _cfg_float(self, key: str, default: float) -> float:
+        value = getattr(self.config, key, None)
+        if value is None:
+            value = os.getenv(key, str(default))
+        return self._to_float(value) if value != "" else default
+
+    def _cfg_int(self, key: str, default: int) -> int:
+        value = getattr(self.config, key, None)
+        if value is None:
+            value = os.getenv(key, str(default))
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return default
 
     def _clamp(self, value: float, lo: float = 0.0, hi: float = 1.0) -> float:
         return max(lo, min(value, hi))

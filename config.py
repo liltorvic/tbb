@@ -45,7 +45,6 @@ class Config:
     MIN_SPREAD_TO_ENTER: float = float(os.getenv("MIN_SPREAD_TO_ENTER", "0.015"))
     # Exclude markets where price is too close to 0 or 1 (near-certain outcome)
     PRICE_EXTREME_THRESHOLD: float = float(os.getenv("PRICE_EXTREME_THRESHOLD", "0.04"))
-
     # ── Spread Parameters ──────────────────────────────────────────────────────
     # All in basis points (1 bps = 0.01%).  1 bps = 0.0001 in decimal.
     # Absolute minimum spread we will ever quote

@@ -385,9 +385,6 @@ class MarketSelector:
             / float(getattr(self.config, "SELECTION_MAX_REASONABLE_SPREAD", 0.08))
         )
         edge_score = 0.55 * spread_score + 0.45 * headroom_score
-        max_reasonable_spread = float(getattr(self.config, "SELECTION_MAX_REASONABLE_SPREAD", 0.08))
-        if spread_pct > max_reasonable_spread and spread_pct > 0:
-            edge_score *= max(0.10, max_reasonable_spread / spread_pct)
 
         target_depth_mult = float(getattr(self.config, "SELECTION_TARGET_DEPTH_MULTIPLIER", 3.0))
         depth_capacity = min(book_meta["bid_depth_window"], book_meta["ask_depth_window"])
@@ -404,8 +401,6 @@ class MarketSelector:
             )
 
         fill_quality_score = 0.65 * depth_score + 0.35 * local_competition_score
-        if depth_capacity <= 0:
-            fill_quality_score *= 0.20
 
         imbalance_penalty = min(abs(book_meta["depth_imbalance"]), 1.0) * 0.10
         last_trade_gap_penalty = min(book_meta["last_trade_gap_pct"] / 0.02, 1.0) * 0.15

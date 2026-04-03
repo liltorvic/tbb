@@ -16,6 +16,15 @@ The bot runs a **buy-first, sell-inventory** strategy on neg-risk binary markets
 
 Naked SELLs (selling shares you don't own) are not supported — the proxy wallet's neg-risk exchange path doesn't allow it. The bot only sells inventory it holds.
 
+### Strategy Scope (Important)
+
+This is a **market-making bot** (sometimes called an MM bot), not a copy-trading bot:
+
+- ✅ Quotes markets and captures spread
+- ✅ Rebalances inventory and enforces risk limits
+- ❌ Does **not** mirror or auto-follow whale wallets
+- ❌ Does **not** include wallet copytrading logic
+
 ---
 
 ## Architecture
@@ -194,6 +203,12 @@ MAX_MARKETS <= Total USDC / (ORDER_SIZE_USD * 3)
 | `MAX_SPREAD_BPS` | `200` | Hard ceiling on quoted spread (2.00%) |
 | `ORDER_SIZE_USD` | `10` | Dollar size per order side |
 | `MAX_ORDER_SIZE_USD` | `50` | Cap after inventory skew adjustment |
+| `USE_EDGE_MODEL` | `false` | Optional EV/Kelly buy gating based on microstructure signals |
+| `MIN_EV_THRESHOLD` | `0.02` | Minimum edge per $1 risked before opening/increasing longs |
+| `KELLY_FRACTION` | `0.25` | Fractional Kelly multiplier (quarter-Kelly default) |
+| `MAX_KELLY_BET_FRACTION` | `0.20` | Hard cap on Kelly sizing as fraction of max position |
+| `EDGE_MOMENTUM_WEIGHT` | `0.30` | Weight for short-term momentum in true-prob estimate |
+| `EDGE_IMBALANCE_WEIGHT` | `0.10` | Weight for order-book imbalance in true-prob estimate |
 | `MAX_POSITION_USD` | `200` | Max dollar exposure per market |
 | `MAX_DAILY_LOSS_USD` | `25` | Halt trading after this daily loss |
 | `STOP_LOSS_PCT` | `0.20` | 20% loss on a position triggers warning |
@@ -233,6 +248,20 @@ On low-probability markets (e.g. 8 cents), this distinction matters significantl
 ### Inventory Skew
 
 When holding a net long position, bids shrink and asks grow to encourage selling and rebalance toward neutral. The reverse applies for net short.
+
+### EV + Fractional Kelly Gate (BUY side)
+
+For opening/increasing long inventory, the bot can now apply:
+
+- **Expected value filter**: skip BUY quotes when estimated edge is below `MIN_EV_THRESHOLD`
+- **Fractional Kelly sizing**: scale BUY notional using capped quarter-Kelly style sizing
+
+The true-probability estimate is intentionally lightweight and derived from:
+
+- recent mid-price momentum
+- live order-book depth imbalance
+
+Sells used to unwind inventory are still allowed even when BUY EV is below threshold.
 
 ---
 

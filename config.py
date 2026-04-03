@@ -59,6 +59,18 @@ class Config:
     ORDER_SIZE_USD: float = float(os.getenv("ORDER_SIZE_USD", "10.0"))
     # Hard cap per single order (inventory-skew can grow orders up to this)
     MAX_ORDER_SIZE_USD: float = float(os.getenv("MAX_ORDER_SIZE_USD", "50.0"))
+    # Enable lightweight edge model (microstructure-based) for BUY gating/sizing
+    USE_EDGE_MODEL: bool = os.getenv("USE_EDGE_MODEL", "false").lower() == "true"
+    # Minimum expected value (edge per $1 risked) required to open/increase longs
+    MIN_EV_THRESHOLD: float = float(os.getenv("MIN_EV_THRESHOLD", "0.02"))
+    # Fractional Kelly multiplier (0.25 = quarter-Kelly, 0.50 = half-Kelly)
+    KELLY_FRACTION: float = float(os.getenv("KELLY_FRACTION", "0.25"))
+    # Absolute cap on Kelly bet fraction to limit drawdowns from model error
+    MAX_KELLY_BET_FRACTION: float = float(os.getenv("MAX_KELLY_BET_FRACTION", "0.20"))
+    # Feature weights for true-probability estimate:
+    # momentum = short-term mid-price drift, imbalance = orderbook skew
+    EDGE_MOMENTUM_WEIGHT: float = float(os.getenv("EDGE_MOMENTUM_WEIGHT", "0.30"))
+    EDGE_IMBALANCE_WEIGHT: float = float(os.getenv("EDGE_IMBALANCE_WEIGHT", "0.10"))
 
     # ── Risk Controls ──────────────────────────────────────────────────────────
     # Max dollar exposure per market (shares × price)

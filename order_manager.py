@@ -45,6 +45,8 @@ class MarketState:
     price_history: deque = field(default_factory=lambda: deque(maxlen=30))
     last_refresh: float = 0.0
     quote_count: int = 0    # lifetime quotes placed
+    last_edge: float = 0.0
+    last_true_prob: float = 0.0
 
 
 # ── Order Manager ──────────────────────────────────────────────────────────────
@@ -133,11 +135,23 @@ class OrderManager:
         bid_price = round(max(0.01, min(raw_bid, 0.98)), 4)
         ask_price = round(max(0.02, min(raw_ask, 0.99)), 4)
 
+        edge_meta = self._edge_and_kelly(book, state)
+
         # Shares = desired USD notional / collateral cost per share.
         # BUY  YES @ price P  →  costs P per share
         # SELL YES @ price P  →  costs (1 - P) per share (you're buying NO)
         #   unless we already hold YES shares (then it's free collateral).
-        base_bid_sh = self.config.ORDER_SIZE_USD / bid_price
+        bid_usd = self.config.ORDER_SIZE_USD
+        if self.config.USE_EDGE_MODEL:
+            if edge_meta["ev"] < self.config.MIN_EV_THRESHOLD:
+                bid_usd = 0.0
+            else:
+                bid_usd = min(
+                    self.config.MAX_ORDER_SIZE_USD,
+                    max(self.config.ORDER_SIZE_USD * 0.25, edge_meta["kelly_usd"]),
+                )
+
+        base_bid_sh = (bid_usd / bid_price) if bid_usd > 0 else 0.0
 
         yes_token = state.token_ids[0]
         held_shares = self.risk.get_position(yes_token)
@@ -195,14 +209,23 @@ class OrderManager:
 
         state.last_refresh = time.time()
         state.quote_count += 1
+        state.last_edge = edge_meta["ev"]
+        state.last_true_prob = edge_meta["p_true"]
 
         spread_bps = (ask_price - bid_price) / mid * 10_000
         logger.info(
             f"[{state.label[:30]:<30}]  "
             f"mid={mid:.4f}  bid={bid_price:.4f}  ask={ask_price:.4f}  "
             f"spread={spread_bps:.1f}bps  "
+            f"ev={edge_meta['ev']:.3f}  "
             f"live_orders={len(state.orders)}"
         )
+
+        if self.config.USE_EDGE_MODEL and edge_meta["ev"] < self.config.MIN_EV_THRESHOLD:
+            logger.debug(
+                f"[{state.label[:30]}] BUY gated by EV filter "
+                f"ev={edge_meta['ev']:.4f} < min={self.config.MIN_EV_THRESHOLD:.4f}"
+            )
 
     # ── Spread calculation ─────────────────────────────────────────────────────
 
@@ -244,6 +267,55 @@ class OrderManager:
         mean = sum(prices) / len(prices)
         variance = sum((p - mean) ** 2 for p in prices) / len(prices)
         return variance ** 0.5
+
+    def _edge_and_kelly(self, book: OrderBook, state: MarketState) -> Dict[str, float]:
+        """
+        Estimate short-horizon true probability from microstructure signals,
+        then compute EV and a capped fractional-Kelly size for BUYs.
+        """
+        p_market = self._clamp_prob(book.mid_price or 0.5)
+        momentum = self._recent_momentum(state)
+        imbalance = float(book.depth_imbalance or 0.0)
+
+        p_true = self._clamp_prob(
+            p_market
+            + (self.config.EDGE_MOMENTUM_WEIGHT * momentum)
+            + (self.config.EDGE_IMBALANCE_WEIGHT * imbalance)
+        )
+
+        # Equivalent to p_true*(1-p_mkt) - (1-p_true)*p_mkt
+        ev = p_true - p_market
+
+        b = (1.0 - p_market) / max(p_market, 1e-6)
+        q = 1.0 - p_true
+        full_kelly = max(0.0, ((p_true * b) - q) / max(b, 1e-6))
+        frac_kelly = min(
+            self.config.MAX_KELLY_BET_FRACTION,
+            full_kelly * max(self.config.KELLY_FRACTION, 0.0),
+        )
+        kelly_usd = frac_kelly * self.config.MAX_POSITION_USD
+
+        return {
+            "p_market": p_market,
+            "p_true": p_true,
+            "ev": ev,
+            "kelly_fraction": frac_kelly,
+            "kelly_usd": kelly_usd,
+        }
+
+    def _recent_momentum(self, state: MarketState) -> float:
+        """Signed short-term drift of the mid-price, normalized to [-1, 1]."""
+        if len(state.price_history) < 4:
+            return 0.0
+        first = state.price_history[0][1]
+        last = state.price_history[-1][1]
+        if first <= 0:
+            return 0.0
+        return max(-1.0, min((last - first) / first, 1.0))
+
+    @staticmethod
+    def _clamp_prob(value: float) -> float:
+        return max(0.01, min(0.99, float(value)))
 
     # ── Inventory skew ─────────────────────────────────────────────────────────
 

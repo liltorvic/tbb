@@ -209,7 +209,8 @@ class MarketMakingBot:
                         f"Stop-loss triggered on {len(triggered)} token(s): "
                         + ", ".join(t[:12] for t in triggered)
                     )
-                    # TODO: place aggressive market orders to close – out of scope for v1
+                    self.risk.emergency_stop("Stop-loss threshold breached")
+                    await self.order_mgr.execute_stop_loss_exits(triggered)
 
                 # Check daily loss limit
                 if self.risk.daily_pnl <= -self.config.MAX_DAILY_LOSS_USD:

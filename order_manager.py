@@ -358,6 +358,40 @@ class OrderManager:
         for state in self.markets.values():
             state.orders.clear()
 
+    async def execute_stop_loss_exits(self, token_ids: List[str]):
+        """
+        Best-effort emergency exits for triggered stop-loss tokens.
+        Cancels local quotes for affected markets, then places protective SELLs
+        for any held YES inventory.
+        """
+        for token_id in token_ids:
+            held_shares = self.risk.get_position(token_id)
+            if held_shares <= 0:
+                continue
+
+            state = self._market_for_token(token_id)
+            label = state.label if state else token_id[:20]
+            if state:
+                for oid in list(state.orders):
+                    if self.client.cancel_order(oid):
+                        state.orders.pop(oid, None)
+
+            midpoint = self.client.get_midpoint(token_id) or 0.5
+            exit_price = round(max(0.01, min(midpoint - 0.05, 0.95)), 4)
+            exit_size = round(max(0.01, held_shares), 2)
+
+            logger.warning(
+                f"[STOP-LOSS] placing protective SELL  {exit_size:.2f} sh @ {exit_price:.4f}  "
+                f"[{label[:28]}]"
+            )
+            self.client.place_limit_order(
+                token_id=token_id,
+                side="SELL",
+                price=exit_price,
+                size=exit_size,
+                market_label=f"STOP {label[:14]}",
+            )
+
     def sync_open_orders(self):
         """
         Reconcile local order tracking against the API.

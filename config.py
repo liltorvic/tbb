@@ -46,6 +46,44 @@ class Config:
     # Exclude markets where price is too close to 0 or 1 (near-certain outcome)
     PRICE_EXTREME_THRESHOLD: float = float(os.getenv("PRICE_EXTREME_THRESHOLD", "0.04"))
 
+
+
+    # ── Selector Stage-2 Tuning ───────────────────────────────────────────────
+    # Coarse shortlist depth before expensive order-book scoring
+    SELECTION_SHORTLIST_MULTIPLIER: int = int(os.getenv("SELECTION_SHORTLIST_MULTIPLIER", "4"))
+    SELECTION_SHORTLIST_SIZE: int = int(os.getenv("SELECTION_SHORTLIST_SIZE", "0"))
+    # Skip markets resolving too soon
+    SELECTION_MIN_TIME_TO_RESOLUTION_SECONDS: int = int(
+        os.getenv("SELECTION_MIN_TIME_TO_RESOLUTION_SECONDS", "3600")
+    )
+    # Depth/competition windows around mid (in basis points)
+    SELECTION_DEPTH_BPS: float = float(os.getenv("SELECTION_DEPTH_BPS", "15"))
+    SELECTION_COMPETITION_BPS: float = float(os.getenv("SELECTION_COMPETITION_BPS", "12"))
+    # Competition/depth normalization controls
+    SELECTION_MAX_COMPETITION_LEVELS: int = int(os.getenv("SELECTION_MAX_COMPETITION_LEVELS", "12"))
+    SELECTION_TARGET_DEPTH_MULTIPLIER: float = float(
+        os.getenv("SELECTION_TARGET_DEPTH_MULTIPLIER", "3.0")
+    )
+    SELECTION_MAX_REASONABLE_SPREAD: float = float(
+        os.getenv("SELECTION_MAX_REASONABLE_SPREAD", "0.08")
+    )
+    SELECTION_MAX_ORDERCOUNT: int = int(os.getenv("SELECTION_MAX_ORDERCOUNT", "1200"))
+    SELECTION_BOOK_CACHE_TTL_SECONDS: float = float(
+        os.getenv("SELECTION_BOOK_CACHE_TTL_SECONDS", "60")
+    )
+    SELECTION_MAX_ADAPTIVE_DEPTH_BPS: float = float(
+        os.getenv("SELECTION_MAX_ADAPTIVE_DEPTH_BPS", "400")
+    )
+    SELECTION_MAX_ADAPTIVE_COMPETITION_BPS: float = float(
+        os.getenv("SELECTION_MAX_ADAPTIVE_COMPETITION_BPS", "400")
+    )
+    # Soft guardrails (penalties, not hard rejects)
+    SELECTION_SOFT_MAX_SPREAD_PCT: float = float(
+        os.getenv("SELECTION_SOFT_MAX_SPREAD_PCT", "0.35")
+    )
+    SELECTION_SOFT_MIN_DEPTH_SHARES: float = float(
+        os.getenv("SELECTION_SOFT_MIN_DEPTH_SHARES", "1.0")
+    )
     # ── Spread Parameters ──────────────────────────────────────────────────────
     # All in basis points (1 bps = 0.01%).  1 bps = 0.0001 in decimal.
     # Absolute minimum spread we will ever quote

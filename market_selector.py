@@ -106,7 +106,7 @@ class MarketSelector:
                 )
 
         final_ranked.sort(key=lambda x: x["score"], reverse=True)
-        selected = final_ranked[: self.config.MAX_MARKETS]
+        selected = self._select_diversified(final_ranked)
 
         if not selected:
             logger.warning(
@@ -119,6 +119,36 @@ class MarketSelector:
         self._last_run = time.time()
         logger.info("Selected %d market(s) to trade.", len(selected))
         return selected
+
+    def markets_for_token_ids(self, token_ids: List[str]) -> List[Dict]:
+        """
+        Best-effort lookup of active market metadata for specific token IDs.
+        Used to keep pre-existing inventory under active management even when
+        those markets are not in the top-ranked selection set.
+        """
+        wanted = {str(tid) for tid in token_ids if tid}
+        if not wanted:
+            return []
+
+        raw = self._fetch_gamma_markets()
+        if not raw:
+            logger.warning("Gamma API returned no markets – falling back to CLOB")
+            raw = self._fetch_clob_markets()
+
+        matches: List[Dict] = []
+        seen_conditions = set()
+        for market in raw:
+            if not self._is_eligible(market):
+                continue
+            entry = self._basic_normalise(market)
+            if not entry:
+                continue
+            if entry["condition_id"] in seen_conditions:
+                continue
+            if wanted.intersection(entry["token_ids"]):
+                matches.append(entry)
+                seen_conditions.add(entry["condition_id"])
+        return matches
 
     # ── Fetchers ─────────────────────────────────────────────────────────────
 
@@ -307,6 +337,7 @@ class MarketSelector:
 
         target_order_usd = float(self.config.ORDER_SIZE_USD)
         target_shares = max(target_order_usd / max(mid, 0.05), 1.0)
+        min_order_shares = max(float(self.config.MIN_ORDER_SIZE_SHARES), 0.01)
 
         depth_bps = self._cfg_float("SELECTION_DEPTH_BPS", 15.0)
         competition_bps = self._cfg_float("SELECTION_COMPETITION_BPS", 12.0)
@@ -374,6 +405,23 @@ class MarketSelector:
         spread_pct = book_meta["spread_pct"]
         target_quote_spread = self.config.TARGET_SPREAD_BPS / 10_000.0
         min_enter_spread = float(self.config.MIN_SPREAD_TO_ENTER)
+        min_order_shares = max(float(self.config.MIN_ORDER_SIZE_SHARES), 0.01)
+
+        if book_meta["target_shares"] < min_order_shares:
+            return 0.0, "reject=min_order_size", {
+                "liquidity_score": 0.0,
+                "edge_score": 0.0,
+                "net_edge_score": 0.0,
+                "depth_score": 0.0,
+                "fill_quality_score": 0.0,
+                "competition_score": round(coarse_meta["competition_score"], 4),
+                "local_competition_score": 0.0,
+                "lifecycle_score": round(coarse_meta["lifecycle_score"], 4),
+                "reward_score": round(coarse_meta["reward_score"], 4),
+                "toxicity_penalty": 0.0,
+                "spread_guard_penalty": 0.0,
+                "depth_guard_penalty": 0.0,
+            }
 
         spread_score = self._spread_score(spread_pct)
         headroom = spread_pct - max(target_quote_spread, min_enter_spread * 0.75)
@@ -422,7 +470,6 @@ class MarketSelector:
             depth_guard_penalty = min((soft_min_depth - depth_capacity) / soft_min_depth, 1.0) * 0.30
 
         guard_penalty = spread_guard_penalty + depth_guard_penalty
-
         net_edge_score = max(0.0, edge_score - toxicity_penalty - guard_penalty)
         liquidity_score = 0.50 * coarse_meta["vol_score"] + 0.50 * depth_score
 
@@ -665,6 +712,113 @@ class MarketSelector:
     def _clamp(self, value: float, lo: float = 0.0, hi: float = 1.0) -> float:
         return max(lo, min(value, hi))
 
+    def _select_diversified(self, ranked: List[Dict]) -> List[Dict]:
+        """
+        Prefer short-dated / high-turnover markets, but keep room for an
+        occasional slower political book if it is genuinely attractive.
+        """
+        if len(ranked) <= self.config.MAX_MARKETS:
+            return ranked[: self.config.MAX_MARKETS]
+
+        target = self.config.MAX_MARKETS
+        fast_candidates = [m for m in ranked if self._is_fast_market(m)]
+        slow_candidates = [m for m in ranked if not self._is_fast_market(m)]
+
+        max_politics = self._max_politics_slots(target)
+        selected: List[Dict] = []
+        used_conditions: set[str] = set()
+        politics_count = 0
+
+        for entry in fast_candidates:
+            if len(selected) >= target:
+                break
+            if self._would_break_mix(entry, politics_count, max_politics):
+                continue
+            selected.append(entry)
+            used_conditions.add(entry["condition_id"])
+            if self._is_politics_market(entry):
+                politics_count += 1
+
+        for entry in ranked:
+            if len(selected) >= target:
+                break
+            if entry["condition_id"] in used_conditions:
+                continue
+            if self._would_break_mix(entry, politics_count, max_politics):
+                continue
+            selected.append(entry)
+            used_conditions.add(entry["condition_id"])
+            if self._is_politics_market(entry):
+                politics_count += 1
+
+        if len(selected) < target:
+            for entry in ranked:
+                if len(selected) >= target:
+                    break
+                if entry["condition_id"] in used_conditions:
+                    continue
+                selected.append(entry)
+                used_conditions.add(entry["condition_id"])
+
+        return selected[:target]
+
+    def _would_break_mix(self, entry: Dict, politics_count: int, max_politics: int) -> bool:
+        if self._is_politics_market(entry) and politics_count >= max_politics:
+            return True
+        return False
+
+    def _max_politics_slots(self, max_markets: int) -> int:
+        if max_markets <= 1:
+            return 1
+        if max_markets <= 3:
+            return 1
+        return max(1, max_markets // 3)
+
+    def _is_fast_market(self, entry: Dict) -> bool:
+        ttr = entry.get("time_to_resolution_s")
+        volume = float(entry.get("volume24h") or 0.0)
+        book = (entry.get("selection_meta") or {}).get("book") or {}
+        spread_pct = float(book.get("spread_pct") or 0.0)
+        depth = min(
+            float(book.get("bid_depth_window") or 0.0),
+            float(book.get("ask_depth_window") or 0.0),
+        )
+
+        if ttr is not None and ttr <= 48 * 3600 and volume >= 25_000 and depth >= 10:
+            return True
+        if ttr is not None and ttr <= 7 * 24 * 3600 and volume >= 75_000 and spread_pct <= 0.08:
+            return True
+        return False
+
+    def _is_politics_market(self, entry: Dict) -> bool:
+        label = str(entry.get("label") or "").lower()
+        politics_terms = (
+            "president",
+            "prime minister",
+            "election",
+            "senate",
+            "house",
+            "governor",
+            "parliament",
+            "seats",
+            "minister",
+            "trump",
+            "biden",
+            "orbán",
+            "orban",
+            "fidesz",
+            "democrat",
+            "republican",
+            "liberal",
+            "conservative",
+            "party",
+            "government",
+            "coalition",
+            "vote",
+            "voting",
+        )
+        return any(term in label for term in politics_terms)
+
     # ── Output shaping ───────────────────────────────────────────────────────
 
     def _normalise(
@@ -676,38 +830,12 @@ class MarketSelector:
         book_meta: Dict[str, Any],
         breakdown: Dict[str, float],
     ) -> Optional[Dict]:
-        condition_id = market.get("conditionId") or market.get("condition_id") or ""
-        if not condition_id:
-            logger.debug("Skipping market with no conditionId")
-            return None
-
-        tokens_raw = market.get("tokens") or market.get("clobTokenIds") or []
-        token_ids: List[str] = []
-
-        if isinstance(tokens_raw, str):
-            try:
-                tokens_raw = json.loads(tokens_raw)
-            except Exception:
-                tokens_raw = []
-
-        if tokens_raw and isinstance(tokens_raw[0], dict):
-            yes_tokens = [t for t in tokens_raw if str(t.get("outcome", "")).lower() == "yes"]
-            no_tokens = [t for t in tokens_raw if str(t.get("outcome", "")).lower() == "no"]
-            ordered = yes_tokens + no_tokens + [
-                t for t in tokens_raw if t not in yes_tokens + no_tokens
-            ]
-            token_ids = [str(t["token_id"]) for t in ordered if t.get("token_id")]
-        else:
-            token_ids = [str(t) for t in tokens_raw]
-
-        if not token_ids:
-            logger.debug("Skipping %s – no token IDs found", condition_id[:12])
+        base = self._basic_normalise(market)
+        if not base:
             return None
 
         return {
-            "condition_id": condition_id,
-            "token_ids": token_ids,
-            "label": market.get("question") or condition_id[:20],
+            **base,
             "score": round(score, 3),
             "reason": reason,
             "volume24h": coarse_meta["volume"],
@@ -742,4 +870,39 @@ class MarketSelector:
                 },
                 "score_breakdown": breakdown,
             },
+        }
+
+    def _basic_normalise(self, market: Dict) -> Optional[Dict[str, Any]]:
+        condition_id = market.get("conditionId") or market.get("condition_id") or ""
+        if not condition_id:
+            logger.debug("Skipping market with no conditionId")
+            return None
+
+        tokens_raw = market.get("tokens") or market.get("clobTokenIds") or []
+        token_ids: List[str] = []
+
+        if isinstance(tokens_raw, str):
+            try:
+                tokens_raw = json.loads(tokens_raw)
+            except Exception:
+                tokens_raw = []
+
+        if tokens_raw and isinstance(tokens_raw[0], dict):
+            yes_tokens = [t for t in tokens_raw if str(t.get("outcome", "")).lower() == "yes"]
+            no_tokens = [t for t in tokens_raw if str(t.get("outcome", "")).lower() == "no"]
+            ordered = yes_tokens + no_tokens + [
+                t for t in tokens_raw if t not in yes_tokens + no_tokens
+            ]
+            token_ids = [str(t["token_id"]) for t in ordered if t.get("token_id")]
+        else:
+            token_ids = [str(t) for t in tokens_raw]
+
+        if not token_ids:
+            logger.debug("Skipping %s – no token IDs found", condition_id[:12])
+            return None
+
+        return {
+            "condition_id": condition_id,
+            "token_ids": token_ids,
+            "label": market.get("question") or condition_id[:20],
         }

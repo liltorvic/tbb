@@ -45,6 +45,7 @@ class MarketState:
     price_history: deque = field(default_factory=lambda: deque(maxlen=30))
     last_refresh: float = 0.0
     quote_count: int = 0    # lifetime quotes placed
+    entry_blocked_until: float = 0.0
 
 
 # ── Order Manager ──────────────────────────────────────────────────────────────
@@ -65,6 +66,8 @@ class OrderManager:
         self.risk = risk_manager
         self.config = config
         self.markets: Dict[str, MarketState] = {}  # condition_id → state
+        self._known_orders: Dict[str, TrackedOrder] = {}
+        self._global_entry_blocked_until: float = 0.0
 
     # ── Market Registration ────────────────────────────────────────────────────
 
@@ -116,6 +119,47 @@ class OrderManager:
         )
         await self._refresh_quotes(state, book)
 
+    async def refresh_market_for_token(
+        self,
+        token_id: str,
+        book: Optional[OrderBook],
+        force: bool = False,
+    ):
+        """
+        Re-quote a market on demand using the latest known book snapshot.
+        Used after fills / position syncs so inventory exits do not wait for
+        another WS event.
+        """
+        state = self._market_for_token(token_id)
+        if not state or not book:
+            return
+
+        if not force:
+            elapsed = time.time() - state.last_refresh
+            if elapsed < self.config.ORDER_REFRESH_INTERVAL:
+                return
+
+        if book.mid_price:
+            state.price_history.append((time.time(), book.mid_price))
+
+        await self._refresh_quotes(state, book)
+
+    def get_tracked_order(self, order_id: str) -> Optional[TrackedOrder]:
+        if order_id in self._known_orders:
+            return self._known_orders[order_id]
+        for state in self.markets.values():
+            if order_id in state.orders:
+                return state.orders[order_id]
+        return None
+
+    def market_has_inventory_or_orders(self, condition_id: str) -> bool:
+        state = self.markets.get(condition_id)
+        if not state:
+            return False
+        if state.orders:
+            return True
+        return any(self.risk.get_position(token_id) > 0 for token_id in state.token_ids)
+
     # ── Core quoting logic ─────────────────────────────────────────────────────
 
     async def _refresh_quotes(self, state: MarketState, book: OrderBook):
@@ -123,14 +167,18 @@ class OrderManager:
             logger.debug(f"[{state.label[:30]}] No mid-price yet – skipping")
             return
 
+        now = time.time()
         mid = book.mid_price
         spread = self._dynamic_spread(book, state)
 
         raw_bid = mid - spread / 2.0
         raw_ask = mid + spread / 2.0
 
-        # Clamp to Polymarket's valid price range
-        bid_price = round(max(0.01, min(raw_bid, 0.98)), 4)
+        best_bid = book.best_bid or raw_bid
+        best_ask = book.best_ask or raw_ask
+
+        # For entry, join the best bid rather than sitting far behind it.
+        bid_price = round(max(0.01, min(max(raw_bid, best_bid), 0.98)), 4)
         ask_price = round(max(0.02, min(raw_ask, 0.99)), 4)
 
         # Shares = desired USD notional / collateral cost per share.
@@ -141,6 +189,8 @@ class OrderManager:
 
         yes_token = state.token_ids[0]
         held_shares = self.risk.get_position(yes_token)
+        avg_cost = self.risk.get_avg_cost(yes_token)
+        holding_age = self.risk.get_holding_age_seconds(yes_token)
         if held_shares > 0:
             # We own shares — selling them costs nothing extra
             base_ask_sh = self.config.ORDER_SIZE_USD / ask_price
@@ -151,16 +201,29 @@ class OrderManager:
 
         # Inventory skew
         bid_sh, ask_sh = self._inventory_skew(yes_token, base_bid_sh, base_ask_sh, mid)
+        min_shares = max(float(self.config.MIN_ORDER_SIZE_SHARES), 0.01)
+
+        if held_shares > 0:
+            await self._cancel_side(state, "BUY")
+            bid_sh = 0.0
+            ask_sh = round(max(held_shares, min_shares), 2)
+            ask_price = self._inventory_exit_price(book, avg_cost, holding_age)
+
+        if ask_price <= bid_price:
+            ask_price = round(min(0.99, bid_price + 0.0001), 4)
 
         # Risk check
         can_buy  = self.risk.can_take_position(yes_token, "BUY",  bid_sh, bid_price)
         can_sell = self.risk.can_take_position(yes_token, "SELL", ask_sh, ask_price)
 
+        if can_buy and (now < self._global_entry_blocked_until or now < state.entry_blocked_until):
+            can_buy = False
+
         # Cancel anything too far from our new targets
         await self._cancel_stale(state, bid_price, ask_price)
 
         # Place bid (always allowed — uses regular exchange path)
-        if can_buy and bid_sh >= 0.01:
+        if can_buy and bid_sh >= min_shares:
             if not self._order_exists(state, "BUY", bid_price):
                 resp = self.client.place_limit_order(
                     token_id=yes_token,
@@ -169,16 +232,17 @@ class OrderManager:
                     size=round(bid_sh, 2),
                     market_label=state.label,
                 )
+                self._handle_order_rejection(resp, state, "BUY")
                 self._track_order(resp, yes_token, "BUY", bid_price, round(bid_sh, 2), state)
 
         # Place ask — only when we hold shares to sell.
         # Naked SELLs (selling shares we don't own) fail on neg-risk markets
         # because the proxy wallet isn't set up for the neg-risk exchange path.
         # Instead we buy first, then sell inventory at the ask for spread capture.
-        if can_sell and ask_sh >= 0.01 and held_shares > 0:
-            # Cap sell size to shares we actually own
-            ask_sh = min(ask_sh, held_shares)
-            if ask_sh >= 0.01 and not self._order_exists(state, "SELL", ask_price):
+        if can_sell and ask_sh >= min_shares and held_shares > 0:
+            # In inventory mode, unwind the whole tracked position to recycle capital.
+            ask_sh = round(min(ask_sh, held_shares), 2)
+            if ask_sh >= min_shares and not self._order_exists(state, "SELL", ask_price):
                 resp = self.client.place_limit_order(
                     token_id=yes_token,
                     side="SELL",
@@ -186,11 +250,22 @@ class OrderManager:
                     size=round(ask_sh, 2),
                     market_label=state.label,
                 )
+                self._handle_order_rejection(resp, state, "SELL")
                 self._track_order(resp, yes_token, "SELL", ask_price, round(ask_sh, 2), state)
         elif can_sell and held_shares <= 0:
             logger.debug(
                 f"[{state.label[:30]}] Skipping SELL – no inventory "
                 f"(need shares from BUY fills first)"
+            )
+        elif ask_sh < min_shares and held_shares > 0:
+            logger.debug(
+                f"[{state.label[:30]}] Skipping SELL – size {ask_sh:.2f} below "
+                f"minimum {min_shares:.2f} shares"
+            )
+        elif bid_sh < min_shares:
+            logger.debug(
+                f"[{state.label[:30]}] Skipping BUY – size {bid_sh:.2f} below "
+                f"minimum {min_shares:.2f} shares"
             )
 
         state.last_refresh = time.time()
@@ -300,6 +375,36 @@ class OrderManager:
             if self.client.cancel_order(oid):
                 state.orders.pop(oid, None)
 
+    async def _cancel_side(self, state: MarketState, side: str):
+        for oid, order in list(state.orders.items()):
+            if order.side != side:
+                continue
+            if self.client.cancel_order(oid):
+                state.orders.pop(oid, None)
+
+    def _inventory_exit_price(self, book: OrderBook, avg_cost: float, holding_age: float) -> float:
+        """
+        Exit inventory aggressively enough to free capital on a small account.
+        The longer we hold, the more we prioritize getting flat over extracting spread.
+        """
+        best_bid = book.best_bid or 0.01
+        best_ask = book.best_ask or min(best_bid + 0.01, 0.99)
+        tick = 0.0001
+        if holding_age < 60:
+            target_profit = max(0.002, avg_cost * 0.010) if avg_cost > 0 else 0.002
+            candidate = min(best_ask - tick, max(best_bid + tick, avg_cost + target_profit))
+        elif holding_age < 180:
+            target_profit = max(0.001, avg_cost * 0.005) if avg_cost > 0 else 0.001
+            candidate = min(best_ask - tick, max(best_bid + tick, avg_cost + target_profit))
+        elif holding_age < 420:
+            target_profit = max(0.0005, avg_cost * 0.002) if avg_cost > 0 else 0.0005
+            candidate = max(best_bid + tick, avg_cost + target_profit)
+        else:
+            # After several minutes, stop holding out for the ask and just sit
+            # at the bid edge if that still preserves a non-negative exit.
+            candidate = max(best_bid, avg_cost + tick)
+        return round(max(0.02, min(candidate, 0.99)), 4)
+
     # ── Helpers ────────────────────────────────────────────────────────────────
 
     def _track_order(
@@ -313,6 +418,8 @@ class OrderManager:
     ):
         if not resp:
             return
+        if resp.get("status") == "error":
+            return
         oid = resp.get("orderID") or resp.get("order_id")
         if not oid:
             return
@@ -324,6 +431,7 @@ class OrderManager:
             size=size,
             label=state.label,
         )
+        self._known_orders[oid] = state.orders[oid]
 
     def _order_exists(self, state: MarketState, side: str, price: float) -> bool:
         """True if we already have a live order on this side near this price."""
@@ -340,6 +448,30 @@ class OrderManager:
             if token_id in state.token_ids:
                 return state
         return None
+
+    def _handle_order_rejection(self, resp: Optional[Dict], state: MarketState, side: str):
+        if not resp or resp.get("status") != "error":
+            return
+        if resp.get("error_type") != "insufficient_balance" or side != "BUY":
+            return
+
+        cooldown = max(self.config.MARKET_REFRESH_INTERVAL, 300.0)
+        blocked_until = time.time() + cooldown
+        state.entry_blocked_until = blocked_until
+        self._global_entry_blocked_until = blocked_until
+
+        logger.warning(
+            "[%s] BUY blocked for %.0fs after insufficient balance; cancelling open bids to free collateral",
+            state.label[:30],
+            cooldown,
+        )
+
+        for market_state in self.markets.values():
+            for oid, order in list(market_state.orders.items()):
+                if order.side != "BUY":
+                    continue
+                if self.client.cancel_order(oid):
+                    market_state.orders.pop(oid, None)
 
     # ── Fill Handling ──────────────────────────────────────────────────────────
 

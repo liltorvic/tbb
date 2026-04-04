@@ -317,9 +317,24 @@ class PolymarketClient:
                 f"[{label}]  id={oid}"
             )
             return resp
+        except PolyApiException as exc:
+            message = str(exc)
+            logger.error(f"place_limit_order failed [{label}]: {exc}")
+            error_type = "api_error"
+            if "not enough balance / allowance" in message.lower():
+                error_type = "insufficient_balance"
+            return {
+                "status": "error",
+                "error_type": error_type,
+                "error_message": message,
+            }
         except Exception as exc:
             logger.error(f"place_limit_order failed [{label}]: {exc}")
-            return None
+            return {
+                "status": "error",
+                "error_type": "unexpected_error",
+                "error_message": str(exc),
+            }
 
     def cancel_order(self, order_id: str) -> bool:
         if self.dry_run:

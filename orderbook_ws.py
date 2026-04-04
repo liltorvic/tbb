@@ -120,6 +120,7 @@ class OrderBookFeed:
         self.on_update = on_update
         self._running = False
         self._reconnect_delay = self._BASE_DELAY
+        self._ws = None
 
         # Initialise books for each token
         self._token_ids: List[str] = []
@@ -134,13 +135,41 @@ class OrderBookFeed:
     def update_token_ids(self, new_ids: List[str]):
         """
         Hot-swap the set of subscribed tokens.
-        New tokens are added; missing ones are removed from the local dict.
-        The caller is responsible for reconnecting the WebSocket if needed.
+        New tokens are added; missing ones are removed from local book state.
         """
+        removed = set(self._token_ids) - set(new_ids)
         added = set(new_ids) - set(self._token_ids)
+        for tid in removed:
+            self.books.pop(tid, None)
         for tid in added:
             self.books[tid] = OrderBook(token_id=tid)
         self._token_ids = list(new_ids)
+
+    async def resubscribe(self, new_ids: List[str]) -> bool:
+        """
+        Update the token set and force the live WS session to reconnect so the
+        server-side subscription matches local state.
+        """
+        old_ids = set(self._token_ids)
+        next_ids = set(new_ids)
+        self.update_token_ids(new_ids)
+
+        if old_ids == next_ids:
+            return False
+
+        logger.info(
+            "WS token set changed: %d -> %d. Reconnecting subscription.",
+            len(old_ids),
+            len(next_ids),
+        )
+
+        ws = self._ws
+        if ws is not None:
+            try:
+                await ws.close(code=1012, reason="subscription changed")
+            except Exception as exc:
+                logger.debug(f"WS resubscribe close failed: {exc}")
+        return True
 
     def stop(self):
         self._running = False
@@ -189,6 +218,7 @@ class OrderBookFeed:
             close_timeout=10,
             max_size=2**23,         # 8 MB – large books can be big
         ) as ws:
+            self._ws = ws
             logger.info("WS connected. Subscribing…")
 
             # Subscribe to all tokens in a single message
@@ -208,6 +238,7 @@ class OrderBookFeed:
                 if not self._running:
                     break
                 await self._dispatch(raw)
+        self._ws = None
 
     async def _dispatch(self, raw: str):
         try:

@@ -28,6 +28,7 @@ class Position:
     realized_pnl: float = 0.0
     last_price: float = 0.0
     peak_price: float = 0.0       # for trailing stop support (future)
+    opened_at: float = 0.0
 
     @property
     def unrealized_pnl(self) -> float:
@@ -112,6 +113,16 @@ class RiskManager:
         """Net shares held (+long / –short)."""
         return self.positions.get(token_id, Position(token_id=token_id)).net_shares
 
+    def get_avg_cost(self, token_id: str) -> float:
+        """Average entry price for the token, if known."""
+        return self.positions.get(token_id, Position(token_id=token_id)).avg_cost
+
+    def get_holding_age_seconds(self, token_id: str) -> float:
+        pos = self.positions.get(token_id, Position(token_id=token_id))
+        if pos.net_shares <= 0 or pos.opened_at <= 0:
+            return 0.0
+        return max(0.0, time.time() - pos.opened_at)
+
     def record_fill(
         self,
         token_id: str,
@@ -127,11 +138,29 @@ class RiskManager:
         This method only computes realised P&L and updates daily totals
         so there is no race between the two.
         """
+        side = (side or "").upper()
+        if side not in {"BUY", "SELL"}:
+            logger.warning(
+                f"record_fill received unknown side={side!r} for {token_id[:14]} "
+                f"size={size:.2f} price={price:.4f}"
+            )
+            return
+
         if token_id not in self.positions:
             self.positions[token_id] = Position(token_id=token_id)
         pos = self.positions[token_id]
 
         if side == "BUY":
+            prior_shares = pos.net_shares
+            new_shares = prior_shares + size
+            if new_shares > 0:
+                pos.avg_cost = (
+                    ((prior_shares * pos.avg_cost) + (size * price)) / new_shares
+                    if prior_shares > 0 else price
+                )
+            if prior_shares <= 0 and new_shares > 0:
+                pos.opened_at = time.time()
+            pos.net_shares = new_shares
             logger.info(
                 f"Fill BUY   {size:.2f}sh @ {price:.4f}  "
                 f"[{token_id[:14]}]"
@@ -149,6 +178,10 @@ class RiskManager:
                 f"realised_pnl=${realised:+.2f}  "
                 f"daily_pnl=${self.daily_pnl:+.2f}"
             )
+            pos.net_shares = max(0.0, pos.net_shares - size)
+            if pos.net_shares == 0:
+                pos.avg_cost = 0.0
+                pos.opened_at = 0.0
 
         pos.last_price = price
 
@@ -171,6 +204,7 @@ class RiskManager:
             logger.error(f"refresh_from_api: failed to fetch positions: {exc}")
             return
 
+        seen_token_ids = set()
         for p in raw_positions:
             token_id  = p.get("asset") or p.get("token_id") or p.get("assetId", "")
             size      = float(p.get("size") or p.get("net_size") or 0)
@@ -179,13 +213,32 @@ class RiskManager:
             if not token_id:
                 continue
 
+            seen_token_ids.add(token_id)
+
             if token_id not in self.positions:
                 self.positions[token_id] = Position(token_id=token_id)
+
+            pos = self.positions[token_id]
+            if pos.net_shares <= 0 and size > 0:
+                pos.opened_at = time.time()
+            elif size <= 0:
+                pos.opened_at = 0.0
 
             self.positions[token_id].net_shares = size
             self.positions[token_id].avg_cost   = avg_price
 
-        logger.info(f"Positions refreshed from API  ({len(self.positions)} tokens held)")
+        for token_id, pos in self.positions.items():
+            if token_id in seen_token_ids:
+                continue
+            if pos.net_shares != 0 or pos.avg_cost != 0:
+                pos.net_shares = 0.0
+                pos.avg_cost = 0.0
+                pos.last_price = 0.0
+                pos.opened_at = 0.0
+                self._stale_warned.discard(token_id)
+
+        held_count = sum(1 for pos in self.positions.values() if pos.net_shares)
+        logger.info(f"Positions refreshed from API  ({held_count} tokens held)")
 
     # ── Stop-Loss ──────────────────────────────────────────────────────────────
 

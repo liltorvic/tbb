@@ -18,6 +18,10 @@ import sys
 import time
 from datetime import datetime, timezone
 
+from bootstrap import ensure_local_venv_packages
+
+ensure_local_venv_packages()
+
 from config import Config
 from clob_client import PolymarketClient
 from orderbook_ws import OrderBookFeed
@@ -69,7 +73,9 @@ class MarketMakingBot:
         self._running = False
         self._stop_event = asyncio.Event()
         self._seen_trade_ids: set = set()       # tracks already-processed fills
-        self._fill_poll_after: int = int(time.time())  # unix ts for trade polling
+        # Start slightly in the past so we do not miss fills due to server/client
+        # clock skew or fills that land during startup.
+        self._fill_poll_after: int = max(0, int(time.time()) - 900)
 
     # ── Startup ────────────────────────────────────────────────────────────────
 
@@ -106,8 +112,24 @@ class MarketMakingBot:
         # 2. Sync existing positions from the API
         self.risk.refresh_from_api()
 
+        held_token_ids = [
+            token_id
+            for token_id, pos in self.risk.positions.items()
+            if pos.net_shares > 0
+        ]
+        held_markets = self.selector.markets_for_token_ids(held_token_ids)
+
         # 3. Select initial market set
-        self.active_markets = self.selector.select_markets(force=True)
+        selected_markets = self.selector.select_markets(force=True)
+        active_by_cid = {m["condition_id"]: m for m in selected_markets}
+        for market in held_markets:
+            if market["condition_id"] not in active_by_cid:
+                active_by_cid[market["condition_id"]] = market
+                logger.info(
+                    "Added held-position market to startup set: %s",
+                    market["label"][:55],
+                )
+        self.active_markets = list(active_by_cid.values())
         if not self.active_markets:
             logger.error(
                 "No eligible markets found.\n"
@@ -201,6 +223,7 @@ class MarketMakingBot:
 
                 # Re-sync positions from API
                 self.risk.refresh_from_api()
+                await self._refresh_inventory_quotes()
 
                 # Check stop-losses – log warnings (auto-close logic below if desired)
                 triggered = self.risk.check_stop_losses()
@@ -257,9 +280,6 @@ class MarketMakingBot:
                     if not trade_id or trade_id in self._seen_trade_ids:
                         continue
 
-                    self._seen_trade_ids.add(trade_id)
-                    new_count += 1
-
                     # Extract fill details
                     side       = trade.get("side", "").upper()       # "BUY" / "SELL"
                     token_id   = trade.get("asset_id", "")
@@ -267,26 +287,30 @@ class MarketMakingBot:
                     price      = float(trade.get("price", 0))
                     order_id   = trade.get("order_id", "")
                     market     = trade.get("market", "")[:30]
-                    status     = trade.get("status", "")
                     fee        = float(trade.get("fee", 0) or 0)
-                    match_time = trade.get("match_time") or trade.get("timestamp", "")
+
+                    self._seen_trade_ids.add(trade_id)
 
                     # Determine our side from the trade (we could be maker or taker)
                     # The `side` field in the trade is the side of the ORDER that matched
-                    trade_side = trade.get("trader_side") or side
-                    if not trade_side:
-                        # Fallback: look at the order we placed
-                        tracked = self.order_mgr.remove_filled_order(order_id)
-                        trade_side = tracked.side if tracked else side
-                    else:
-                        trade_side = trade_side.upper()
-                        self.order_mgr.remove_filled_order(order_id)
+                    trade_side = await self._resolve_fill_side(trade, order_id, side)
 
                     if size <= 0 or price <= 0:
+                        continue
+                    if trade_side not in {"BUY", "SELL"}:
+                        logger.debug(
+                            "Ignoring trade %s with unresolved side=%r order_id=%s token=%s",
+                            trade_id[:16],
+                            trade_side,
+                            order_id[:16],
+                            token_id[:14],
+                        )
                         continue
 
                     # Record the fill in the risk manager
                     self.risk.record_fill(token_id, trade_side, size, price)
+                    await self._refresh_market_for_token(token_id, force=True)
+                    new_count += 1
 
                     logger.info(
                         f"FILL DETECTED  {trade_side:4s}  {size:7.2f} sh @ {price:.4f}  "
@@ -315,6 +339,51 @@ class MarketMakingBot:
             except Exception as exc:
                 logger.error(f"fill_monitor_loop: {exc}")
 
+    async def _resolve_fill_side(self, trade: dict, order_id: str, fallback: str) -> str:
+        """
+        Determine whether the filled order was our BUY or SELL.
+        Trade payloads may say MAKER/TAKER, which is not a trading side.
+        """
+        token_id = str(trade.get("asset_id") or "")
+        tracked = self.order_mgr.get_tracked_order(order_id) if order_id else None
+        if tracked:
+            return tracked.side
+
+        raw_side = (trade.get("trader_side") or fallback or "").upper()
+        if raw_side in {"BUY", "SELL"}:
+            # Constrained fallback for fills we plausibly own even when the local
+            # order map drifted or the bot restarted recently.
+            if self.order_mgr._market_for_token(token_id) or self.risk.get_position(token_id) != 0:
+                return raw_side
+
+        # Ignore fills we cannot map back to an order this bot actually placed.
+        # The wallet can have manual or pre-existing activity, and MAKER/TAKER
+        # is not sufficient to infer whether our inventory should change.
+        if order_id:
+            logger.debug(
+                "Ignoring trade for untracked order %s token=%s fallback_side=%r",
+                order_id[:16],
+                token_id[:14],
+                fallback,
+            )
+        return ""
+
+    async def _refresh_market_for_token(self, token_id: str, force: bool = False):
+        if not self._ws_feed:
+            return
+        book = self._ws_feed.get_book(token_id)
+        if not book or not book.mid_price or book.is_stale():
+            return
+        await self.order_mgr.refresh_market_for_token(token_id, book, force=force)
+
+    async def _refresh_inventory_quotes(self):
+        if not self._ws_feed:
+            return
+        for token_id, pos in self.risk.positions.items():
+            if pos.net_shares <= 0:
+                continue
+            await self._refresh_market_for_token(token_id, force=True)
+
     async def _stats_loop(self):
         """Print a periodic status summary."""
         while self._running:
@@ -336,22 +405,34 @@ class MarketMakingBot:
     # ── Market diff ────────────────────────────────────────────────────────────
 
     async def _apply_market_diff(self, new_markets):
+        old_market_map = {m["condition_id"]: m for m in self.active_markets}
         new_cids = {m["condition_id"] for m in new_markets}
         old_cids = {m["condition_id"] for m in self.active_markets}
+        retained_markets = list(new_markets)
 
         for cid in old_cids - new_cids:
+            old_market = old_market_map[cid]
+            if self.order_mgr.market_has_inventory_or_orders(cid):
+                retained_markets.append(old_market)
+                logger.info(
+                    "Keeping market %s active because inventory/orders still exist",
+                    cid[:14],
+                )
+                continue
             self.order_mgr.remove_market(cid)
             logger.info(f"Dropped market {cid[:14]}…")
 
-        for m in new_markets:
+        for m in retained_markets:
             if m["condition_id"] not in old_cids:
                 self.order_mgr.register_market(m)
 
-        self.active_markets = new_markets
+        self.active_markets = retained_markets
 
         # Update WS subscriptions
         if self._ws_feed:
-            self._ws_feed.update_token_ids(self._yes_token_ids())
+            resubscribed = await self._ws_feed.resubscribe(self._yes_token_ids())
+            if resubscribed:
+                logger.info("Triggered WS resubscribe for refreshed market set")
 
     # ── Shutdown ───────────────────────────────────────────────────────────────
 

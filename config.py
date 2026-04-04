@@ -59,6 +59,8 @@ class Config:
     ORDER_SIZE_USD: float = float(os.getenv("ORDER_SIZE_USD", "10.0"))
     # Hard cap per single order (inventory-skew can grow orders up to this)
     MAX_ORDER_SIZE_USD: float = float(os.getenv("MAX_ORDER_SIZE_USD", "50.0"))
+    # Polymarket rejects orders below the venue minimum share size on many books.
+    MIN_ORDER_SIZE_SHARES: float = float(os.getenv("MIN_ORDER_SIZE_SHARES", "5.0"))
 
     # ── Risk Controls ──────────────────────────────────────────────────────────
     # Max dollar exposure per market (shares × price)
